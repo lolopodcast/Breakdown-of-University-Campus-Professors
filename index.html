@@ -26,8 +26,8 @@ tailwind.config = {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .dark ::-webkit-scrollbar-thumb { background: #475569; }
-selection { background: #004030; color: white; }
-.dark selection { background: #D8C3A5; color: #004030; }
+::selection { background: #004030; color: white; }
+.dark ::selection { background: #D8C3A5; color: #004030; }
 </style>
 </head>
 <body>
@@ -62,6 +62,7 @@ const IconZapLab=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/sv
 // ─── Dict ───
 const dict = {
 zh: {
+brand:"EDU",
 title:"AI 時代教育大解構",subtitle:"從學習方法到校園存廢的蘇格拉底式探究",
 nav_modules:"單元目錄",nav_prev:"上一單元",nav_next:"下一單元",
 key_terms:"關鍵專有名詞",flip_prompt:"點擊翻轉",audio_read:"語音導覽",
@@ -250,6 +251,7 @@ architect_url:"https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/2
 },
 
 en: {
+brand:"EDU",
 title:"Deconstructing Education in the AI Era",subtitle:"A Socratic inquiry from learning methods to campus obsolescence",
 nav_modules:"Module Directory",nav_prev:"Previous",nav_next:"Next",
 key_terms:"Key Terms",flip_prompt:"Click to flip",audio_read:"Audio Guide",
@@ -433,7 +435,7 @@ architect_url:"https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/2
 const TOTAL = 9; // M0 + M1-M5 + M6 + M7 + M8
 
 // ─── Reusable Components ───
-const H2=({children})=><h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] leading-tight">{children}</h2>;
+const H2=({children,icon,number})=><h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] leading-tight mb-6 flex items-center gap-3">{icon&&<span className="text-2xl">{icon}</span>}{number!==undefined&&<span>{number}.</span>}<span>{children}</span></h2>;
 
 const FlipCard=({front,back,t})=>{
   const[flipped,setFlipped]=useState(false);
@@ -714,7 +716,7 @@ function App(){
       const sep=lang==='zh'?'。 ':'. ';
       let texts=[];
       if(module===0){texts=[t.m0_title,t.m0_intro,t.m0_why,t.m0_why_desc,...(t.m0_stats||[]).map(s=>`${s.label}: ${s.val}`),...(t.m0_modules||[]).map(m=>`${m.title}. ${m.desc}`)].filter(Boolean);}
-      else if(module>=1&&module<=5){const mk=`m${module}`;texts=[t[`${mk}_title`],t[`${mk}_p1`],t[`${mk}_p2`],t[`${mk}_p3`],...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc}`),...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back])].filter(Boolean);}
+      else if(module>=1&&module<=5){const mk=`m${module}`;texts=[t[`${mk}_title`],...[1,2,3,4,5,6,7,8].map(n=>t[`${mk}_p${n}`]).filter(Boolean),...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc||''}`),...(t[`${mk}_timeline`]||[]).map(s=>`${s.title}. ${s.desc||''}`),...(t[`${mk}_examples`]||[]).map(e=>`${e.name||e.title||''}. ${e.desc||''}`),...(t[`${mk}_list`]||[]).map(item=>typeof item==='string'?item:`${item.title||''}. ${item.desc||''}`),t[`${mk}_alert`],t[`${mk}_quote`],t[`${mk}_note`],...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back])].filter(Boolean);}
       else if(module===6){texts=[t.m6_title,t.m6_desc].filter(Boolean);}
       else if(module===7){texts=[t.mlab_title,t.mlab_desc].filter(Boolean);}
       else{texts=[t.analytics_title,t.analytics_desc].filter(Boolean);}
@@ -763,10 +765,17 @@ function App(){
     const mKey=`m${mk}`;
     return(
       <div className={`space-y-6 text-lg leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`}>
-        <H2>{t[`${mKey}_title`]}</H2>
+        <H2 icon={moduleIcons[mk]} number={mk}>{t[`${mKey}_title`]}</H2>
         <p>{t[`${mKey}_p1`]}</p>
         <p className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg italic font-serif text-base">{t[`${mKey}_p2`]}</p>
         <p>{t[`${mKey}_p3`]}</p>
+        {t[`${mKey}_p4`]&&<p>{t[`${mKey}_p4`]}</p>}
+        {t[`${mKey}_p5`]&&<div className="p-4 bg-[#004030]/5 dark:bg-[#D8C3A5]/10 rounded-xl border border-[#004030]/20 dark:border-[#D8C3A5]/20"><p className="text-base">{t[`${mKey}_p5`]}</p></div>}
+        {t[`${mKey}_p6`]&&<p>{t[`${mKey}_p6`]}</p>}
+        {t[`${mKey}_p7`]&&<p>{t[`${mKey}_p7`]}</p>}
+        {t[`${mKey}_p8`]&&<p>{t[`${mKey}_p8`]}</p>}
+        {t[`${mKey}_alert`]&&<div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-300 dark:border-yellow-700"><p className="text-sm text-yellow-800 dark:text-yellow-200">⚠️ {t[`${mKey}_alert`]}</p></div>}
+        {t[`${mKey}_quote`]&&<blockquote className="border-l-4 border-[#D8C3A5] pl-4 italic text-slate-600 dark:text-slate-400">{t[`${mKey}_quote`]}</blockquote>}
         {t[`${mKey}_cards`]&&(
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {t[`${mKey}_cards`].map((c,i)=>(
@@ -779,11 +788,11 @@ function App(){
         )}
         <div className="mt-8">
           <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4">{t.key_terms}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div key={`terms-${module}`} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {t[`${mKey}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}
           </div>
         </div>
-        <ModuleQuiz questions={t[`${mKey}_q`]} t={t} moduleId={module} onQuizSubmit={handleQuizSubmit}/>
+        <ModuleQuiz key={`quiz-${module}`} questions={t[`${mKey}_q`]} t={t} moduleId={module} onQuizSubmit={handleQuizSubmit}/>
       </div>
     );
   };
@@ -797,7 +806,7 @@ function App(){
       :[{icon:'📚',cat:'Learning Methodology',items:[{label:'Team-Based Learning Collaborative',url:'https://www.teambasedlearning.org',desc:'Official TBL community and resources'},{label:'Problem-Based Learning at Maastricht',url:'https://www.maastrichtuniversity.nl/education/why-um/problem-based-learning',desc:'PBL\'s birthplace — Maastricht University introduction'}]},{icon:'🤖',cat:'AI & Education',items:[{label:'Stanford HAI — AI in Education',url:'https://hai.stanford.edu/education',desc:'Stanford Human-Centered AI Institute education topics'},{label:'MIT Teaching Systems Lab',url:'https://tsl.mit.edu',desc:'MIT TSL — exploring teacher roles in the AI era'}]}];
     return(
       <div className={`space-y-10 ${fade}`}>
-        <H2>{t.m6_title}</H2>
+        <H2 icon={moduleIcons[6]} number={6}>{t.m6_title}</H2>
         <p className="text-slate-600 dark:text-slate-400">{t.m6_desc}</p>
         <div className="grid md:grid-cols-2 gap-3">{mainLinks.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
         {otherLinks.map((sec,si)=>(
@@ -815,7 +824,7 @@ function App(){
 
   const renderLab=()=>(
     <div className={`space-y-8 ${fade}`}>
-      <H2>{t.mlab_title}</H2>
+      <H2 icon={moduleIcons[7]} number={7}>{t.mlab_title}</H2>
       <p className="mt-4 text-slate-600 dark:text-slate-400">{t.mlab_desc}</p>
       <EducationStackLab lang={lang}/>
       <div className="grid md:grid-cols-2 gap-6">
@@ -840,7 +849,7 @@ function App(){
     const modNames=[t.m0_nav,t.m1_nav,t.m2_nav,t.m3_nav,t.m4_nav,t.m5_nav,t.m6_nav,t.mlab_nav,t.analytics_title];
     return(
       <div className={`space-y-8 ${fade}`}>
-        <H2>{t.analytics_title}</H2>
+        <H2 icon={moduleIcons[8]} number={8}>{t.analytics_title}</H2>
         <p className="text-slate-600 dark:text-slate-400">{t.analytics_desc}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
@@ -983,7 +992,7 @@ function App(){
               )}
             </div>
             <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-2 text-white hover:text-[#D8C3A5] transition-colors">
-              <span className="font-serif font-black text-[#D8C3A5] text-lg tracking-widest">ENT</span>
+              <span className="font-serif font-black text-[#D8C3A5] text-lg tracking-widest">{t.brand}</span>
               <span className="hidden sm:inline font-serif font-bold text-sm md:text-base text-white">{t.title}</span>
             </button>
           </div>
@@ -1037,10 +1046,13 @@ function App(){
       {/* Footer */}
       <footer className="h-8 bg-[#004030] flex items-center justify-between px-4 shrink-0">
         <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs">{t.date} · {t.copyright}</span>
-        <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs flex items-center gap-1">
-          Architect:&nbsp;
-          <a href="https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo" target="_blank" rel="noopener noreferrer"
-            className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a>
+        <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            Architect:&nbsp;
+            <a href="https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo" target="_blank" rel="noopener noreferrer"
+              className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a>
+          </span>
+          <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="text-[#D8C3A5] hover:text-white transition-colors font-bold cursor-pointer">Top ↑</button>
         </span>
       </footer>
     </div>
