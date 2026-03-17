@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 時代教育大解構 | Deconstructing Education in the AI Era</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'], serif: ['Merriweather','serif'] } } }
+}
+</script>
+<style>
+@keyframes fadeInUp { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+.animate-fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+.perspective { perspective: 1000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.rotate-y-180 { transform: rotateY(180deg); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+selection { background: #004030; color: white; }
+.dark selection { background: #D8C3A5; color: #004030; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useRef, useCallback} = React;
+
+// ─── Icons ───
+const IconBookOpen=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>;
+const IconAlertTriangle=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IconCheckCircle=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const IconGlobe=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
+const IconChevronRight=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+const IconChevronUp=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"/></svg>;
+const IconMenu=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+const IconX=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IconMoon=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
+const IconSun=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IconPlay=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const IconPause=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+const IconSquare=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>;
+const IconArrowRight=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+const IconActivity=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+const IconCpu=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+const IconTrendingUp=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+const IconLayers=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+const IconFlag=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
+const IconZap=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+const IconFlask=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3h6v7l5 8.5a2 2 0 01-1.73 3H5.73a2 2 0 01-1.73-3L9 10z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>;
+const IconZapLab=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/><circle cx="18" cy="18" r="4" fill="none"/></svg>;
+
+// ─── Dict ───
+const dict = {
+zh: {
+title:"AI 時代教育大解構",subtitle:"從學習方法到校園存廢的蘇格拉底式探究",
+nav_modules:"單元目錄",nav_prev:"上一單元",nav_next:"下一單元",
+key_terms:"關鍵專有名詞",flip_prompt:"點擊翻轉",audio_read:"語音導覽",
+quiz_title:"模組知識檢定（隨機 4 題）",
+submit:"提交答案",retry:"重新測驗",
+score:"得分",correct:"正確",incorrect:"錯誤",explanation:"解析",
+
+analytics_title:"學習歷程分析",analytics_desc:"追蹤你在各模組的學習時間、互動次數與測驗表現。",analytics_form_title:"個人資訊（匯出 CSV 用）",
+analytics_group:"組別",analytics_dept:"系級",analytics_dept_ph:"例：IBS3",
+analytics_id:"學號",analytics_id_ph:"例：112212099",
+analytics_name:"姓名",analytics_name_ph:"例：Jimmy Lo",
+analytics_export_csv:"匯出 CSV 歷程記錄",
+analytics_fill_required:"請填寫完整資訊以解鎖匯出",
+group_options:["G1","G2","G3","G4","G5","G6","Others"],
+analytics_total_time:"總學習時間",analytics_total_clicks:"總互動點擊",
+analytics_overall_acc:"總體測驗答對率",
+analytics_module:"模組",analytics_time:"停留時間",
+analytics_clicks:"點擊次數",analytics_acc:"答對率",
+analytics_correct_ans_total:"答對 / 已填答 / 總題數",
+analytics_no_data:"尚未測驗",analytics_sec:"秒",analytics_times:"次",
+
+// M0
+m0_nav:"0. 課程總覽",
+m0_title:"AI 時代教育大解構",
+m0_intro:"透過一場蘇格拉底式的連續提問，從學習方法論一路拆解到校園存廢、教授角色與年輕人的未來。每一題都在前一題的答案上再推一步，像剝洋蔥一樣逼近教育的本質。",
+m0_why:"為什麼這門課重要？",
+m0_why_desc:"AI 正在重塑知識的生產、傳遞與評價方式。理解這場變革如何影響學習方法、教學角色、校園功能與個人發展，是每位教育者和學習者的必修課。",
+m0_modules:[
+{num:"01",title:"學習方法論的對決",desc:"SDL vs TBL、PBL vs PjBL——引擎、加速器與學習設計的底層邏輯"},
+{num:"02",title:"教學場域與生命體驗",desc:"翻轉教室 vs 場域實習、實習 vs 交換留學——學習發生在哪裡？"},
+{num:"03",title:"教學責任與 AI 融入",desc:"創新教學 vs 教好教滿、傳統方法 vs AI——根與翅膀的辯證"},
+{num:"04",title:"校園與教室的未來",desc:"EMI/EML 在 AI 時代的質變、教室功能重構、校園存廢之辯"},
+{num:"05",title:"大學教授與年輕人的希望",desc:"研究者、導師、守門人三重角色的全面解構，以及破曉的年輕世代"}
+],
+m0_stats:[
+{val:"16+",label:"核心提問數"},{val:"5",label:"學習模組"},{val:"40",label:"測驗題目"},{val:"∞",label:"思辨深度"}
+],
+m0_start:"開始學習 →",
+
+// M1
+m1_nav:"1. 學習方法論",m1_title:"學習方法論的對決",
+m1_p1:"教育的起點是一個古老的問題：「你要我釣魚給你，還是教你釣魚？」這個問題引出了學習方法論中四組關鍵對比——SDL vs TBL、PBL vs PjBL。每一組都不是二選一，而是相互增強的動態系統。",
+m1_p2:"「SDL 是引擎，TBL 是加速器。沒有 SDL 能力的人進入 TBL，會變成搭便車的乘客。反過來，只有 SDL 沒有 TBL，容易陷入認知盲點的迴聲室。」",
+m1_p3:"PBL 像醫生看診——面對複雜問題，抽絲剝繭找病因；PjBL 像建築師蓋房子——從設計到施工交出成品。最強的學習設計是用 PBL 的精神啟動探究，再用 PjBL 的框架落地產出。",
+m1_cards:[
+{title:"SDL 自主學習",desc:"學習者自己設定目標、規劃路徑、尋找資源、監控進度、反思調整。核心是個人的學習主權。"},
+{title:"TBL 團隊學習",desc:"透過團隊合作深化理解：課前預習→個人測驗→團隊測驗→應用練習。核心是社群碰撞建構知識。"},
+{title:"PBL 問題導向",desc:"丟給學習者真實、複雜、沒有標準答案的問題，在解題過程中發現需要學什麼。重點在探究過程。"},
+{title:"PjBL 專案導向",desc:"完成有明確產出的專案——產品、報告、原型、展演。學習發生在做專案的過程中。"}
+],
+m1_terms:[
+{front:"SDL",back:"Self-Directed Learning 自主學習：學習者自主設定目標、規劃路徑、監控進度與反思調整的學習模式。"},
+{front:"TBL",back:"Team-Based Learning 團隊學習：透過課前預習、個人/團隊測驗與應用練習，在團隊碰撞中深化理解。"},
+{front:"PBL vs PjBL",back:"Problem-Based vs Project-Based：PBL 重探究過程（像看診），PjBL 重產出成品（像蓋房）。最佳設計是結合兩者。"}
+],
+m1_q:[
+{q:"SDL 在 TBL 中扮演什麼角色？",opts:["加速器","引擎","煞車","裝飾"],ans:1,exp:"SDL 是引擎——提供個人學習動力；TBL 是加速器——透過團隊碰撞放大學習效果。"},
+{q:"沒有 SDL 能力的人進入 TBL 會怎樣？",opts:["成為領導者","搭便車","自動學會","退出團隊"],ans:1,exp:"沒有自主學習基礎，在團隊中只能依賴他人，變成搭便車的乘客。"},
+{q:"PBL 最像哪種角色？",opts:["建築師","醫生","廚師","運動員"],ans:1,exp:"PBL 像醫生看診——面對複雜症狀，抽絲剝繭找出病因，重點在探究過程。"},
+{q:"PjBL 的核心特徵是什麼？",opts:["沒有標準答案","有明確產出","純理論探討","個人獨立完成"],ans:1,exp:"PjBL 要求學習者交出看得見的成品——產品、報告、原型等。"},
+{q:"SDL 和 TBL 的最佳關係是？",opts:["二選一","TBL 取代 SDL","循環互補","彼此獨立"],ans:2,exp:"自主學習→帶進團隊碰撞→發現不足→回去自主學習→再驗證，形成增強循環。"},
+{q:"最強的學習設計是？",opts:["純 PBL","純 PjBL","PBL 啟動 + PjBL 落地","放棄兩者"],ans:2,exp:"用 PBL 的問題驅動啟動探究，再用 PjBL 的專案框架將探究結果轉化為具體產出。"},
+{q:"TBL 流程的第一步通常是？",opts:["團隊討論","個人測驗","老師講課","小組報告"],ans:1,exp:"TBL 以個人測驗開始，檢驗每個人課前 SDL 的品質，再進入團隊討論。"},
+{q:"SDL + TBL 循環的核心動力是？",opts:["考試壓力","認知衝突","老師要求","學分需求"],ans:1,exp:"團隊中不同觀點的碰撞產生認知衝突，逼你重新審視自己的理解，驅動更深的自主學習。"}
+],
+
+// M2
+m2_nav:"2. 教學場域與體驗",m2_title:"教學場域與生命體驗",
+m2_p1:"學習不只發生在方法論中，更發生在特定的場域裡。翻轉教室優化了課堂時間的使用方式，場域實習則把學習者直接送進真實世界。兩者是上下游的關係：翻轉是優化的準備階段，場域是不可替代的實戰階段。",
+m2_p2:"「Tell me and I forget, show me and I remember, involve me and I understand. 場域實習就是最徹底的 involve。」",
+m2_p3:"實習（Internship）垂直深化你在特定領域的專業能力，交換留學（Exchange Study）水平拓展你的世界觀與文化智商。理想的路徑是：先交換打開視野，再實習建立專業——交換給你鏡片，實習給你槓桿。",
+m2_cards:[
+{title:"翻轉教室",desc:"課前透過影片或教材自學知識，課堂時間拿來討論、練習、應用。本質是重新分配課堂時間，把面對面時間留給高層次互動。"},
+{title:"場域實習",desc:"直接進入真實工作現場——醫院、學校、企業、社區。在真實情境中操作、觀察、反思，讓知識接受現實檢驗。"},
+{title:"實習 Internship",desc:"在專業環境中做真實工作，建立產業技能、發展人脈、測試職涯方向。核心收穫是專業身份與實務能力。"},
+{title:"交換留學 Exchange",desc:"在不同學術與文化環境中學習，重建假設、發展跨文化適應力。核心收穫是視野拓展與文化智商。"}
+],
+m2_terms:[
+{front:"Flipped Classroom",back:"翻轉教室：顛倒「課堂講授＋回家練習」的傳統模式，課前自學知識，課堂時間做高層次應用與討論。"},
+{front:"Field Practicum",back:"場域實習：將學習者送進真實工作場域，在實際情境中操作、觀察、反思。是最徹底的 involve。"},
+{front:"Vertical vs Horizontal",back:"實習垂直深化專業能力，交換水平拓展世界觀。兩者互補：交換給你鏡片（lens），實習給你槓桿（leverage）。"}
+],
+m2_q:[
+{q:"翻轉教室的本質是什麼？",opts:["取消課堂","重新分配課堂時間","讓學生自學","減少老師工作"],ans:1,exp:"翻轉教室的核心是把寶貴的面對面時間從低層次的知識傳遞轉移到高層次的討論與應用。"},
+{q:"場域實習解決的核心問題是？",opts:["課堂效率","知行落差","考試壓力","教師負擔"],ans:1,exp:"再好的課堂都是模擬環境，場域實習讓學習者直接面對真實世界的複雜度，把「知道」轉化為「做到」。"},
+{q:"翻轉教室和場域實習的關係是？",opts:["互相取代","上下游關係","完全無關","二選一"],ans:1,exp:"翻轉教室是優化的準備階段，場域實習是不可替代的實戰階段，兩者是上下游關係。"},
+{q:"實習（Internship）的核心收穫是？",opts:["文化視野","專業身份與實務能力","語言能力","學術論文"],ans:1,exp:"實習讓你在真實專業環境中建立產業技能、發展人脈、測試職涯方向。"},
+{q:"交換留學的獨特價值在於？",opts:["學分轉換","重建假設與跨文化適應力","提高GPA","逃避壓力"],ans:1,exp:"當所有習以為常的事突然不管用，你被迫從頭重建假設，這種認知重構是交換的獨特價值。"},
+{q:"最理想的經歷順序是？",opts:["先實習後交換","先交換後實習","只做實習","只去交換"],ans:1,exp:"先交換打開視野和適應力，再實習時能運用國際經驗。交換給你鏡片，實習給你槓桿。"},
+{q:"場域實習可比擬為？",opts:["在游泳池練習","被丟進大海","在岸上看書","看游泳影片"],ans:1,exp:"游泳池（翻轉教室）可以優化練習，但大海（場域實習）有浪、暗流等真實變數。"},
+{q:"哪句話最能代表場域實習的精神？",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:2,exp:"Involve me and I understand——場域實習就是最徹底的 involve，在參與中真正理解。"}
+],
+
+// M3
+m3_nav:"3. 教學與 AI 融入",m3_title:"教學責任與 AI 融入",
+m3_p1:"創新教學和把課教好教滿，哪個重要？很多所謂的創新教學，執行起來是花了三節課做分組活動，熱鬧非凡但基本概念一塌糊塗。這不是創新，是用形式取代內容。先求教好教滿，再求教得更巧。",
+m3_p2:"「創新的正確定位，是『教好』的升級版，不是替代品。一個老師如果課都教不滿、教不清楚，就急著去翻轉、去 PBL，那是在沙灘上蓋城堡。」",
+m3_p3:"傳統創新教學法（翻轉、PBL、TBL、PjBL）是教學的作業系統，提供學習設計的底層邏輯。AI 是新裝上的強大硬體，讓原本受限的教學設計有了全新可能。根不穩，翅膀只會讓你摔得更快；根扎得深，翅膀能帶你飛到從前到不了的地方。",
+m3_cards:[
+{title:"SDL + AI",desc:"AI 學伴讓自主學習效率與深度大幅提升——隨時對話、追問、客製化解釋，不再只是看影片讀課本。"},
+{title:"TBL + AI",desc:"團隊討論前先跟 AI 辯論觀點，帶更成熟想法進團隊。AI 也能當第三方觀點提供者，打破團體迷思。"},
+{title:"PBL + AI",desc:"AI 幫學生快速蒐集資料、生成假設、模擬方案，把時間留給高層次的分析判斷，不卡在資料蒐集苦工。"},
+{title:"翻轉 + AI",desc:"課前有 AI 即時答疑，課堂上 AI 即時掌握每位學生理解狀況，實現真正的差異化指導。"}
+],
+m3_terms:[
+{front:"教學作業系統",back:"傳統創新教學法（翻轉、PBL、TBL、PjBL）提供學習設計的底層邏輯——為什麼要問題驅動？為什麼先自學再討論？"},
+{front:"AI = 新硬體",back:"AI 讓每一種教學法都能升級：SDL 有 AI 學伴、TBL 有 AI 辯論夥伴、PBL 有 AI 研究助手、翻轉有 AI 即時診斷。"},
+{front:"根與翅膀",back:"傳統教學法是根，AI 是翅膀。沒有教學法底層邏輯的 AI 融入，只是把教學外包給 AI，不是真正的創新。"}
+],
+m3_q:[
+{q:"創新教學的正確定位是？",opts:["取代傳統教學","教好教滿的升級版","純粹的形式變化","額外的負擔"],ans:1,exp:"創新是建立在紮實教學基礎上的升級，不是替代品。地基沒打好就蓋樓，蓋出來不會好用。"},
+{q:"沒有教學法底層邏輯的 AI 融入會變成？",opts:["真正的創新","把教學外包給 AI","差異化教學","翻轉教室"],ans:1,exp:"不懂 PBL 設計原理就叫學生去問 AI 交報告，學到的不是知識而是複製貼上。"},
+{q:"傳統創新教學法在比喻中被稱為？",opts:["翅膀","引擎","作業系統","硬體"],ans:2,exp:"傳統創新教學法是教學的作業系統，提供底層邏輯；AI 是新硬體，提供執行能力。"},
+{q:"AI 融入 TBL 的價值是？",opts:["取代團隊討論","當第三方觀點提供者","讓學生不用準備","減少互動"],ans:1,exp:"AI 能在團隊討論前幫個人磨利觀點，討論中提供第三方視角打破團體迷思。"},
+{q:"先求教好教滿的理由是？",opts:["創新不重要","紮實教學本身就是高超專業","學生不需要創新","行政要求"],ans:1,exp:"把課講清楚、讓不同程度學生都聽懂、評量精準到位——這些基本功做到極致就是高超專業。"},
+{q:"AI 融入 SDL 的關鍵突破是？",opts:["取代老師","隨時可對話追問的 AI 學伴","自動完成作業","不需要學習"],ans:1,exp:"AI 學伴讓自學不再只是被動看影片，而是有即時對話、追問、客製化解釋的互動體驗。"},
+{q:"在沙灘上蓋城堡比喻的是？",opts:["基礎扎實才創新","不需要基礎","創新最重要","放棄教學"],ans:0,exp:"課都教不好就急著搞創新教學法，就像在沙灘上蓋城堡——地基不穩，蓋了也會塌。"},
+{q:"根與翅膀的正確組合是？",opts:["只要翅膀","只要根","根扎深再長翅膀","都不需要"],ans:2,exp:"傳統教學法的根扎得深，AI 的翅膀才能帶你飛到從前到不了的地方。"}
+],
+
+// M4
+m4_nav:"4. 校園的未來",m4_title:"校園與教室的未來",
+m4_p1:"當 AI 融入 EML 後，EMI 從「必需品」變成「奢侈品」。過去 EMI 是實現 EML 的唯一管道，AI 打開了其他管道——學生透過 AI 自主建構英語學習環境，不再完全依賴老師的英語授課。該把力氣花在確保每個學生都能 EML，而不是要求每個老師都能 EMI。",
+m4_p2:"「教室不會消失，但它從『學習的主場』降級為『學習生態系中的一個節點』——出場頻率降低，但每次出場的份量加重。」",
+m4_p3:"用 PBL 驅動、PjBL 產出，AI 融入 SDL 加線上 TBL，接軌場域實習——這套系統組裝完成後，校園從「教育的預設容器」變成「教育的選配模組」。校園體驗成為一個可選擇的附加層，不再是必經之路。教育的未來不是「有校園」或「沒校園」，而是「不再預設每個人都需要校園」。",
+m4_cards:[
+{title:"EMI → EML 的翻轉",desc:"EMI 是手段（老師用英語教），EML 是目的（學生用英語學）。AI 讓 EML 不再完全依賴 EMI。"},
+{title:"教室的三個新功能",desc:"高密度碰撞的競技場、關係與信任的培養皿、反思與意義建構的聖殿。出場頻率降低，份量加重。"},
+{title:"校園 = 選配模組",desc:"Agentic AI + 線上學習 + 場域實踐構成基礎架構。校園體驗變成可選擇的附加層，不再是必經之路。"},
+{title:"儀式性的共在",desc:"一群人定期在同一空間相聚提供的共同記憶和社群認同，不是學習的效率問題，而是意義問題。"}
+],
+m4_terms:[
+{front:"EMI vs EML",back:"EMI = English as Medium of Instruction（手段）；EML = English as Medium of Learning（目的）。AI 讓兩者脫鉤。"},
+{front:"選配模組",back:"校園從每個人必經的「預設容器」，變成根據個人需求可選擇的「附加模組」。兩條路通向同樣的學習成果。"},
+{front:"儀式性共在",back:"Ritual Co-presence：身體共處創造的學習張力、社群歸屬、集體反思——線上無法完全複製的存在性體驗。"}
+],
+m4_q:[
+{q:"AI 融入 EML 後，EMI 變成什麼？",opts:["更重要","從必需品變奢侈品","完全消失","不受影響"],ans:1,exp:"AI 讓學生能自主建構英語學習環境，EMI 不再是實現 EML 的唯一管道。"},
+{q:"教室在未來教育生態中的角色是？",opts:["學習的主場","學習生態系的節點","完全消失","不變"],ans:1,exp:"教室從主場降為節點，出場頻率降低但份量加重——碰撞、歸屬、反思三大功能。"},
+{q:"教室的「儀式性共在」指的是？",opts:["上課點名","身體共處創造的社群認同","考試制度","畢業典禮"],ans:1,exp:"一群人在同一物理空間的共同經歷、眼神、沉默、微表情——這些線上無法複製的互動。"},
+{q:"校園變成「選配模組」意味著？",opts:["所有人都不需要校園","校園不再是所有人的必經之路","校園更重要了","沒有變化"],ans:1,exp:"有些人選完整校園體驗，有些人選線上+場域路徑。兩條路通向同樣被認證的成果。"},
+{q:"未來教育的基礎架構是？",opts:["傳統校園","Agentic AI + 線上學習 + 場域實踐","只有教室","只有實習"],ans:1,exp:"去中心化的系統成為基礎架構，校園體驗變成附加層。"},
+{q:"EMI 仍有價值的面向是？",opts:["知識傳遞","真人英語學術示範與身份認同模型","考試需要","行政規定"],ans:1,exp:"教授用英語即時推導、回應提問的活生生示範，帶給學生學術身份認同的模型效果。"},
+{q:"把力氣花在哪裡更有效？",opts:["要求每個老師 EMI","確保每個學生能 EML","取消英語教學","只用中文教學"],ans:1,exp:"讓每個學生都能透過AI等多元管道用英語學習，比勉強每個老師用英語教更有效且公平。"},
+{q:"教室一學期可能只見面幾次，但每次是？",opts:["例行公事","不可取代的高峰體驗","純粹社交","行政需要"],ans:1,exp:"每次實體聚會都是高密度碰撞、建立信任、集體反思的高峰體驗。"}
+],
+
+// M5
+m5_nav:"5. 教授與年輕人",m5_title:"大學教授與年輕人的希望",
+m5_p1:"大學教授的三重角色——教學者、研究者、導師——在 AI 時代面臨全面解構。教學被 AI 做得更好更有耐心；Agentic AI 能自動完成從問題發掘到論文刊登的全研究流程，且難以被偵測；Physical AI 的出現更讓導師角色的最後防線也被突破。",
+m5_p2:"「能做出不被 AI 取代之研究的教授有 1% 嗎？當 Agentic AI 滿足學術遊戲規則的所有要求，教授的研究動機本身會崩塌——不是因為他們不好，是因為制度的誘因結構讓『自己做研究』變成不理性的選擇。」",
+m5_p3:"但教授時代的落幕不是年輕人的末日，而是破曉。年輕人是第一代 AI 原住民，沒有舊習慣要改、沒有舊身份要放下。真正的希望在於：一個會問問題的人，在任何時代都有希望，而在 AI 時代，這種人的槓桿被放大了一千倍。",
+m5_cards:[
+{title:"研究者角色的瓦解",desc:"Agentic AI 全自動研究流水線——從文獻回顧到投稿刊登——且不可偵測。學術誠信體制的根基正在瓦解。"},
+{title:"導師角色的突破",desc:"Physical AI 提供實體在場、無限耐心、專業諮商能力。功能層面上可能超越多數缺乏諮商訓練的教授。"},
+{title:"學術體制的三條路",desc:"全面崩塌（AI 寫給 AI 看）→ 重新定義研究 → 放棄偵測改變遊戲規則。路徑一先發生，逼出路徑三。"},
+{title:"年輕人的破曉",desc:"AI 原住民、無舊包袱、起跑線前所未有地公平。核心能力：自主發問 × 系統追問 × AI 協作 × 真正的關心。"}
+],
+m5_terms:[
+{front:"Agentic AI",back:"具自主代理能力的 AI，能獨立完成從問題發掘、研究設計、數據分析到論文投稿的全流程，難以被偵測。"},
+{front:"Physical AI",back:"有實體存在的 AI 機器人，能感知表情肢體語言、提供溫暖互動、具備專業諮商能力，解決了「存在性陪伴」的規模化問題。"},
+{front:"AI 原住民",back:"第一代在 AI 環境中成長的年輕人。不需要「適應」AI，AI 是原生工具。核心優勢：好奇心、跨域直覺、意義渴望、行動勇氣。"}
+],
+m5_q:[
+{q:"教授的哪個角色最先被 AI 取代？",opts:["研究者","教學者","導師","行政"],ans:1,exp:"AI 在知識傳遞上更有耐心、更能客製化、24小時在線——教學者角色最先被取代。"},
+{q:"Agentic AI 研究流水線為什麼難以偵測？",opts:["AI 會承認","留下明顯痕跡","全程模擬人類研究行為","只能寫短論文"],ans:2,exp:"Agent 分階段工作，留下看起來像人類思考過程的數位足跡，統計特徵與人類無異。"},
+{q:"當 AI 滿足學術遊戲規則，教授的研究動機會？",opts:["更強","崩塌","不變","轉向教學"],ans:1,exp:"制度誘因讓「自己做研究」變成不理性選擇。能外包的苦差事，為什麼要自己扛？"},
+{q:"Physical AI 在導師角色上的結構性優勢是？",opts:["有學位","規模化的高品質陪伴","有論文","有行政權力"],ans:1,exp:"每個學生都能擁有專屬的、頂級品質的 Physical AI 導師，這是教育公平的根本性躍進。"},
+{q:"學術體制最可能的演化路徑是？",opts:["維持現狀","路徑一（崩塌）先發生，逼出路徑三","直接路徑二","回到傳統"],ans:1,exp:"短期全面灰色地帶，集體虛偽自我瓦解後，被迫尋找 AI 無法偽造的評價標準。"},
+{q:"年輕人的核心優勢是？",opts:["學歷","沒有舊包袱的 AI 原住民","教授保護","制度保障"],ans:1,exp:"沒有舊習慣要改、沒有舊身份要放下，是第一代有機會從二十歲就用 AI 做過去需要整個團隊才能做的事。"},
+{q:"在 AI 時代最有價值的能力組合是？",opts:["背誦能力","自主發問 × 系統追問 × AI 協作","考試技巧","服從指令"],ans:1,exp:"會問問題的人在任何時代都有希望，AI 時代這種人的槓桿被放大一千倍。"},
+{q:"教授時代的落幕對年輕人意味著？",opts:["末日","破曉","無影響","更需要教授"],ans:1,exp:"舊的知識壟斷被打破，年輕人和資深者站在幾乎相同的起跑線上，甚至跑得更快。"}
+],
+
+// M6
+m6_nav:"6. 外部資源",m6_title:"延伸學習資源",m6_desc:"精選與本課程主題相關的外部資源，幫助你深入探索 AI 時代的教育變革。",
+
+// M7
+mlab_nav:"7. 互動實驗室",mlab_title:"互動實驗室",mlab_desc:"透過互動式工具，親自探索本課程的核心概念與模型。",
+
+date:"Version 2026.03.17",
+copyright:"For Educational Use Only",
+architect_label:"Architect:",
+architect_name:"Prof. Shihmin Lo",
+architect_url:"https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo"
+},
+
+en: {
+title:"Deconstructing Education in the AI Era",subtitle:"A Socratic inquiry from learning methods to campus obsolescence",
+nav_modules:"Module Directory",nav_prev:"Previous",nav_next:"Next",
+key_terms:"Key Terms",flip_prompt:"Click to flip",audio_read:"Audio Guide",
+quiz_title:"Module Quiz (Random 4 Questions)",
+submit:"Submit",retry:"Retry",
+score:"Score",correct:"Correct",incorrect:"Incorrect",explanation:"Explanation",
+
+analytics_title:"Learning Analytics",analytics_desc:"Track your learning time, interactions, and quiz performance across modules.",analytics_form_title:"Personal Info (for CSV export)",
+analytics_group:"Group",analytics_dept:"Department",analytics_dept_ph:"e.g., IBS3",
+analytics_id:"Student ID",analytics_id_ph:"e.g., 112212099",
+analytics_name:"Name",analytics_name_ph:"e.g., Jimmy Lo",
+analytics_export_csv:"Export CSV Record",
+analytics_fill_required:"Please fill in all fields to unlock export",
+group_options:["G1","G2","G3","G4","G5","G6","Others"],
+analytics_total_time:"Total Learning Time",analytics_total_clicks:"Total Interactions",
+analytics_overall_acc:"Overall Quiz Accuracy",
+analytics_module:"Module",analytics_time:"Time Spent",
+analytics_clicks:"Clicks",analytics_acc:"Accuracy",
+analytics_correct_ans_total:"Correct / Answered / Total",
+analytics_no_data:"Not attempted",analytics_sec:"sec",analytics_times:"times",
+
+m0_nav:"0. Overview",
+m0_title:"Deconstructing Education in the AI Era",
+m0_intro:"Through a Socratic series of questions, we deconstruct education from learning methodologies to campus obsolescence, professor roles, and the future of young learners. Each question builds upon the last, peeling back layers to reach the essence of education.",
+m0_why:"Why Does This Matter?",
+m0_why_desc:"AI is reshaping how knowledge is produced, transmitted, and evaluated. Understanding how this transformation impacts learning methods, teaching roles, campus functions, and personal development is essential for every educator and learner.",
+m0_modules:[
+{num:"01",title:"The Learning Methods Showdown",desc:"SDL vs TBL, PBL vs PjBL — engines, accelerators, and the underlying logic of learning design"},
+{num:"02",title:"Teaching Venues & Life Experiences",desc:"Flipped classroom vs field practicum, internship vs exchange — where does learning happen?"},
+{num:"03",title:"Teaching Responsibility & AI Integration",desc:"Innovation vs solid teaching, traditional methods vs AI — the dialectic of roots and wings"},
+{num:"04",title:"The Future of Campus & Classroom",desc:"EMI/EML transformation in the AI era, classroom reinvention, and the campus obsolescence debate"},
+{num:"05",title:"Professors & Young People's Hope",desc:"Full deconstruction of the researcher, mentor, and gatekeeper roles — and the dawn of a new generation"}
+],
+m0_stats:[
+{val:"16+",label:"Core Questions"},{val:"5",label:"Learning Modules"},{val:"40",label:"Quiz Questions"},{val:"∞",label:"Critical Depth"}
+],
+m0_start:"Start Learning →",
+
+m1_nav:"1. Learning Methods",m1_title:"The Learning Methods Showdown",
+m1_p1:"Education begins with an ancient question: 'Do you want me to give you a fish, or teach you to fish?' This leads to four key comparisons in learning methodology — SDL vs TBL, PBL vs PjBL. None are either-or choices; they form a mutually reinforcing dynamic system.",
+m1_p2:"\"SDL is the engine, TBL is the accelerator. Someone without SDL capacity entering TBL becomes a free rider. Conversely, SDL without TBL easily falls into the echo chamber of cognitive blind spots.\"",
+m1_p3:"PBL is like a doctor diagnosing — unraveling complex symptoms to find root causes. PjBL is like an architect building — designing and constructing a tangible deliverable. The strongest learning design ignites inquiry through PBL, then grounds it through PjBL.",
+m1_cards:[
+{title:"SDL: Self-Directed Learning",desc:"Learners set their own goals, plan pathways, find resources, monitor progress, and reflect. The core is personal learning sovereignty."},
+{title:"TBL: Team-Based Learning",desc:"Deepen understanding through teamwork: pre-class preparation → individual test → team test → application. The core is knowledge construction through social collision."},
+{title:"PBL: Problem-Based",desc:"Present learners with real, complex, open-ended problems. They discover what they need to learn through the problem-solving process."},
+{title:"PjBL: Project-Based",desc:"Complete a project with a clear deliverable — a product, report, prototype, or presentation. Learning happens in the making."}
+],
+m1_terms:[
+{front:"SDL",back:"Self-Directed Learning: A learning model where learners autonomously set goals, plan paths, monitor progress, and reflect on their growth."},
+{front:"TBL",back:"Team-Based Learning: Through pre-class prep, individual/team quizzes, and application exercises, understanding deepens via team collision."},
+{front:"PBL vs PjBL",back:"Problem-Based vs Project-Based: PBL focuses on inquiry (like diagnosis), PjBL on deliverables (like construction). Best design combines both."}
+],
+m1_q:[
+{q:"What role does SDL play in TBL?",opts:["Accelerator","Engine","Brake","Decoration"],ans:1,exp:"SDL is the engine providing individual learning drive; TBL is the accelerator amplifying learning through team collision."},
+{q:"What happens to someone without SDL capacity in TBL?",opts:["Becomes a leader","Becomes a free rider","Automatically learns","Drops out"],ans:1,exp:"Without self-directed learning foundations, one can only rely on others in the team, becoming a free rider."},
+{q:"PBL is most like which role?",opts:["Architect","Doctor","Chef","Athlete"],ans:1,exp:"PBL is like a doctor diagnosing — facing complex symptoms, methodically finding root causes, focusing on the inquiry process."},
+{q:"What is the core feature of PjBL?",opts:["No standard answers","Clear deliverables","Pure theory","Individual work only"],ans:1,exp:"PjBL requires learners to produce tangible outputs — products, reports, prototypes, etc."},
+{q:"What is the optimal SDL-TBL relationship?",opts:["Either-or","TBL replaces SDL","Complementary cycle","Completely independent"],ans:2,exp:"Self-study → team collision → discover gaps → more self-study → team validation — a reinforcing cycle."},
+{q:"What is the strongest learning design?",opts:["Pure PBL","Pure PjBL","PBL ignition + PjBL grounding","Abandon both"],ans:2,exp:"Use PBL's problem-driven approach to ignite inquiry, then PjBL's project framework to ground results into concrete outputs."},
+{q:"What is typically the first step in TBL?",opts:["Team discussion","Individual quiz","Lecture","Group presentation"],ans:1,exp:"TBL begins with individual quizzes to verify each person's pre-class SDL quality before team discussion."},
+{q:"What drives the SDL + TBL cycle?",opts:["Exam pressure","Cognitive conflict","Teacher demands","Credit requirements"],ans:1,exp:"Clashing perspectives in teams create cognitive conflict, forcing you to re-examine understanding and driving deeper self-study."}
+],
+
+m2_nav:"2. Venues & Experiences",m2_title:"Teaching Venues & Life Experiences",
+m2_p1:"Learning doesn't just happen through methods — it happens in specific venues. Flipped classrooms optimize how class time is used, while field practicum places learners directly into the real world. They form an upstream-downstream relationship: flipping is optimized preparation; fieldwork is irreplaceable real combat.",
+m2_p2:"\"Tell me and I forget, show me and I remember, involve me and I understand. Field practicum is the most thorough form of involvement.\"",
+m2_p3:"Internships deepen your professional competence vertically in a specific field, while exchange study broadens your worldview and cultural intelligence horizontally. The ideal path: exchange first to open perspectives, then internship to build leverage — exchange gives you the lens, internship gives you the leverage.",
+m2_cards:[
+{title:"Flipped Classroom",desc:"Self-study content before class through videos/materials; class time is for discussion, practice, and application. Essentially redistributing class time for higher-order interaction."},
+{title:"Field Practicum",desc:"Enter real work environments — hospitals, schools, companies, communities. Operate, observe, and reflect in authentic contexts where knowledge meets reality."},
+{title:"Internship",desc:"Real work in professional settings, building industry skills, developing networks, and testing career fit. Core gain: professional identity and practical competence."},
+{title:"Exchange Study",desc:"Learn in different academic and cultural environments, rebuild assumptions, develop cross-cultural adaptability. Core gain: broadened perspective and cultural intelligence."}
+],
+m2_terms:[
+{front:"Flipped Classroom",back:"Reverses 'lecture in class + practice at home': self-study knowledge beforehand, use class time for higher-order application and discussion."},
+{front:"Field Practicum",back:"Placing learners in real-world work settings to operate, observe, and reflect in authentic contexts. The most thorough form of 'involve me.'"},
+{front:"Vertical vs Horizontal",back:"Internships deepen expertise vertically; exchange broadens worldview horizontally. Complementary: exchange = lens, internship = leverage."}
+],
+m2_q:[
+{q:"What is the essence of the flipped classroom?",opts:["Eliminate classes","Redistribute class time","Let students self-study only","Reduce teacher workload"],ans:1,exp:"The core of flipping is shifting precious face-to-face time from low-level knowledge delivery to high-level discussion and application."},
+{q:"What core problem does field practicum solve?",opts:["Class efficiency","The knowing-doing gap","Exam pressure","Teacher burden"],ans:1,exp:"No matter how good the classroom, it's simulated. Field practicum lets learners face real-world complexity, converting 'knowing' to 'doing.'"},
+{q:"What is the relationship between flipped classroom and field practicum?",opts:["They replace each other","Upstream-downstream","Completely unrelated","Either-or"],ans:1,exp:"Flipped classroom is optimized preparation; field practicum is irreplaceable real combat — upstream and downstream."},
+{q:"What is the core gain of internship?",opts:["Cultural perspective","Professional identity & practical competence","Language skills","Academic papers"],ans:1,exp:"Internship builds industry skills, networks, and career direction testing in real professional environments."},
+{q:"What is the unique value of exchange study?",opts:["Credit transfer","Rebuilding assumptions & cross-cultural adaptability","Higher GPA","Escaping pressure"],ans:1,exp:"When everything familiar suddenly doesn't work, you're forced to rebuild assumptions from scratch — exchange's unique cognitive restructuring."},
+{q:"What is the ideal sequence of experiences?",opts:["Internship then exchange","Exchange then internship","Internship only","Exchange only"],ans:1,exp:"Exchange first opens perspectives and adaptability; then internship leverages that international experience. Lens first, leverage second."},
+{q:"Field practicum can be compared to?",opts:["Practicing in a pool","Being thrown into the ocean","Reading on shore","Watching swimming videos"],ans:1,exp:"The pool (flipped classroom) optimizes practice, but the ocean (field practicum) has waves, currents, and real-world variables."},
+{q:"Which quote best represents field practicum?",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:2,exp:"'Involve me and I understand' — field practicum is the most thorough involvement, understanding through participation."}
+],
+
+m3_nav:"3. Teaching & AI",m3_title:"Teaching Responsibility & AI Integration",
+m3_p1:"Innovative teaching vs teaching the full curriculum well — which matters more? Many so-called innovations spend three class sessions on group activities with great fanfare, but students fail basic concepts afterward. That's not innovation; it's replacing content with form. Master the basics first, then innovate.",
+m3_p2:"\"Innovation's proper positioning is an upgrade of 'teaching well,' not a replacement. A teacher who can't even cover the basics but rushes into flipping and PBL is building castles on sand.\"",
+m3_p3:"Traditional innovative methods (flipping, PBL, TBL, PjBL) are the teaching operating system, providing the underlying logic of learning design. AI is powerful new hardware that unlocks previously impossible possibilities. Unstable roots make wings dangerous; deep roots let wings carry you to places you've never reached.",
+m3_cards:[
+{title:"SDL + AI",desc:"AI companions dramatically boost self-study efficiency and depth — real-time dialogue, follow-up questions, customized explanations, far beyond watching videos alone."},
+{title:"TBL + AI",desc:"Debate your viewpoints with AI before team discussions, bringing more refined ideas. AI also serves as a third-party perspective provider, breaking groupthink."},
+{title:"PBL + AI",desc:"AI helps students rapidly gather data, generate hypotheses, and simulate solutions, freeing time for higher-order analysis and judgment."},
+{title:"Flipped + AI",desc:"AI provides instant Q&A during pre-class self-study; in class, AI enables real-time understanding diagnostics for true differentiated instruction."}
+],
+m3_terms:[
+{front:"Teaching OS",back:"Traditional innovative methods (flipping, PBL, TBL, PjBL) provide the underlying logic of learning design — why problem-driven? Why self-study before discussion?"},
+{front:"AI = New Hardware",back:"AI upgrades every teaching method: SDL gets AI companions, TBL gets AI debate partners, PBL gets AI research assistants, flipping gets AI diagnostics."},
+{front:"Roots & Wings",back:"Traditional methods are roots, AI is wings. AI integration without pedagogical foundations just outsources teaching to AI — not real innovation."}
+],
+m3_q:[
+{q:"What is innovation's proper positioning?",opts:["Replace traditional teaching","An upgrade of teaching well","Pure formal change","Extra burden"],ans:1,exp:"Innovation is built on solid teaching foundations as an upgrade, not a replacement. Build on sand and it collapses."},
+{q:"AI integration without pedagogical foundations becomes?",opts:["True innovation","Outsourcing teaching to AI","Differentiated instruction","Flipped classroom"],ans:1,exp:"Telling students to 'ask AI and submit a report' without understanding PBL design teaches copy-paste, not knowledge."},
+{q:"Traditional innovative methods are metaphorically called?",opts:["Wings","Engine","Operating system","Hardware"],ans:2,exp:"Traditional methods are the teaching OS providing underlying logic; AI is new hardware providing execution capability."},
+{q:"What is AI's value in TBL?",opts:["Replace team discussion","Third-party perspective provider","Students skip preparation","Reduce interaction"],ans:1,exp:"AI helps individuals sharpen viewpoints before discussion and provides third-party perspectives to break groupthink."},
+{q:"Why master basics first?",opts:["Innovation doesn't matter","Solid teaching itself is sophisticated expertise","Students don't need innovation","Administrative requirement"],ans:1,exp:"Clear lectures, reaching all levels of students, precise assessment — these fundamentals at their best are sophisticated expertise."},
+{q:"AI's key breakthrough in SDL is?",opts:["Replace teachers","Always-available AI companion for dialogue","Auto-complete homework","No learning needed"],ans:1,exp:"AI companions transform self-study from passive video watching to interactive dialogue with real-time follow-up and customized explanations."},
+{q:"'Building castles on sand' refers to?",opts:["Solid foundation before innovation","No foundation needed","Innovation is most important","Abandon teaching"],ans:0,exp:"Rushing into innovative methods without mastering basics is like building castles on sand — the foundation is unstable."},
+{q:"The correct roots-and-wings combination is?",opts:["Wings only","Roots only","Deep roots then grow wings","Neither needed"],ans:2,exp:"With deep roots in traditional methods, AI wings can carry you to places previously unreachable."}
+],
+
+m4_nav:"4. Future of Campus",m4_title:"The Future of Campus & Classroom",
+m4_p1:"Once AI is integrated into EML, EMI shifts from 'necessity' to 'luxury.' EMI used to be the only channel to achieve EML. AI opens other channels — students can autonomously build English learning environments through AI, no longer fully dependent on professors teaching in English. Invest effort in ensuring every student can EML, not requiring every teacher to EMI.",
+m4_p2:"\"The classroom won't disappear, but it downgrades from 'the main venue of learning' to 'a node in the learning ecosystem' — appearing less frequently, but with greater weight each time.\"",
+m4_p3:"PBL-driven inquiry, PjBL output, AI-empowered SDL, online TBL, connected to field practicum — once this system is assembled, the campus shifts from 'education's default container' to 'education's optional module.' The future isn't 'campus or no campus' but 'no longer assuming everyone needs a campus.'",
+m4_cards:[
+{title:"EMI → EML Flip",desc:"EMI is means (teachers use English to teach), EML is purpose (students learn through English). AI decouples EML from EMI dependence."},
+{title:"Classroom's Three New Functions",desc:"Arena for high-density collision, petri dish for relationships and trust, sanctuary for reflection and meaning-making. Less frequent, more impactful."},
+{title:"Campus = Optional Module",desc:"Agentic AI + online learning + field practice form the base infrastructure. Campus experience becomes an optional add-on layer, no longer mandatory."},
+{title:"Ritual Co-presence",desc:"Regular physical gatherings provide shared memory and community identity. Not a question of learning efficiency, but of existential meaning."}
+],
+m4_terms:[
+{front:"EMI vs EML",back:"EMI = English as Medium of Instruction (means); EML = English as Medium of Learning (purpose). AI decouples the two."},
+{front:"Optional Module",back:"Campus shifts from a mandatory 'default container' for everyone to an elective 'add-on module' based on individual needs. Both paths lead to certified outcomes."},
+{front:"Ritual Co-presence",back:"The learning tension, community belonging, and collective reflection created by physical co-presence — an existential experience that cannot be fully replicated online."}
+],
+m4_q:[
+{q:"After AI integrates into EML, EMI becomes?",opts:["More important","Shifts from necessity to luxury","Completely disappears","Unaffected"],ans:1,exp:"AI enables students to autonomously build English learning environments; EMI is no longer the only channel for EML."},
+{q:"The classroom's future role in education is?",opts:["The main venue","A node in the learning ecosystem","Completely gone","Unchanged"],ans:1,exp:"Classroom downgrades from main venue to node — less frequent but heavier: collision, belonging, reflection."},
+{q:"'Ritual co-presence' in the classroom means?",opts:["Attendance checking","Community identity through physical co-presence","Exam system","Graduation ceremony"],ans:1,exp:"Shared physical space creates eye contact, sighs, silence — micro-signals that online environments compress to near-zero."},
+{q:"Campus becoming an 'optional module' means?",opts:["Nobody needs campus","Campus is no longer everyone's mandatory path","Campus becomes more important","No change"],ans:1,exp:"Some choose full campus experience, others choose online + field paths. Both lead to equally certified learning outcomes."},
+{q:"The base infrastructure of future education is?",opts:["Traditional campus","Agentic AI + online learning + field practice","Classroom only","Internship only"],ans:1,exp:"Decentralized system becomes base infrastructure; campus experience becomes the optional add-on layer."},
+{q:"In what aspect does EMI retain value?",opts:["Knowledge delivery","Live academic English demonstration & identity modeling","Exam needs","Administrative rules"],ans:1,exp:"Professors demonstrating real-time English argumentation provide academic identity models that AI currently cannot."},
+{q:"Where should effort be invested more effectively?",opts:["Requiring every teacher to EMI","Ensuring every student can EML","Cancel English teaching","Teach only in Chinese"],ans:1,exp:"Enabling every student to learn through English via AI and other channels is more effective and equitable than forcing EMI on every teacher."},
+{q:"Each campus gathering, though rare, should be?",opts:["Routine","An irreplaceable peak experience","Pure socializing","Administrative need"],ans:1,exp:"Each physical gathering is a peak experience of high-density collision, trust-building, and collective reflection."}
+],
+
+m5_nav:"5. Professors & Youth",m5_title:"Professors & Young People's Hope",
+m5_p1:"University professors' three roles — teacher, researcher, mentor — face total deconstruction in the AI era. Teaching is done better by AI with more patience; Agentic AI can autonomously complete the entire research pipeline from problem discovery to publication, and it's virtually undetectable; Physical AI breaches the last defense of the mentor role.",
+m5_p2:"\"Do even 1% of professors do research AI can't replace? When Agentic AI meets all academic game rules, the research motivation itself collapses — not because they're bad, but because the incentive structure makes 'doing research yourself' an irrational choice.\"",
+m5_p3:"But the fall of the professor era isn't young people's doom — it's their dawn. Young people are the first generation of AI natives, with no old habits to break and no old identities to defend. The real hope: a person who asks good questions has hope in any era, and in the AI era, their leverage is multiplied a thousandfold.",
+m5_cards:[
+{title:"Researcher Role Collapse",desc:"Agentic AI's fully automated research pipeline — from literature review to publication acceptance — is virtually undetectable. Academic integrity's foundation is crumbling."},
+{title:"Mentor Role Breach",desc:"Physical AI provides embodied presence, infinite patience, and professional counseling skills. Functionally may surpass most professors who lack counseling training."},
+{title:"Three Paths for Academia",desc:"Total collapse (AI writes for AI to read) → Redefine 'research' → Abandon detection, change game rules. Path 1 happens first, forcing Path 3."},
+{title:"Young People's Dawn",desc:"AI natives, no legacy baggage, unprecedentedly level playing field. Core abilities: autonomous questioning × systematic inquiry × AI collaboration × genuine care."}
+],
+m5_terms:[
+{front:"Agentic AI",back:"AI with autonomous agency that independently completes the full research pipeline from discovery through publication, virtually undetectable in its outputs."},
+{front:"Physical AI",back:"Embodied AI robots that sense facial expressions and body language, provide warm interaction, possess professional counseling skills, solving scalable 'existential companionship.'"},
+{front:"AI Natives",back:"First generation growing up with AI as native tools. No need to 'adapt' to AI. Core advantages: curiosity, cross-domain intuition, meaning-seeking, courage to act."}
+],
+m5_q:[
+{q:"Which professor role is replaced by AI first?",opts:["Researcher","Teacher","Mentor","Administrator"],ans:1,exp:"AI is more patient, more customizable, available 24/7 in knowledge delivery — the teacher role falls first."},
+{q:"Why is Agentic AI research virtually undetectable?",opts:["AI confesses","Leaves obvious traces","Simulates all human research behaviors","Can only write short papers"],ans:2,exp:"The agent works in stages, leaving digital footprints that look like human thought processes, statistically indistinguishable."},
+{q:"When AI meets all academic game rules, professors' research motivation will?",opts:["Strengthen","Collapse","Stay unchanged","Shift to teaching"],ans:1,exp:"Incentive structures make 'doing research yourself' irrational. Why carry a burden you can outsource?"},
+{q:"Physical AI's structural advantage in mentorship is?",opts:["Has a degree","Scalable high-quality companionship","Has publications","Has authority"],ans:1,exp:"Every student can have a dedicated, top-quality Physical AI mentor — a fundamental leap in educational equity."},
+{q:"The most likely evolution path for academia is?",opts:["Status quo","Path 1 (collapse) first, forcing Path 3","Direct Path 2","Return to tradition"],ans:1,exp:"Short-term gray areas everywhere, collective pretense self-destructs, forcing new evaluation standards AI cannot fake."},
+{q:"Young people's core advantage is?",opts:["Credentials","AI natives with no legacy baggage","Professor protection","Institutional guarantees"],ans:1,exp:"No old habits to break, no old identities to defend — first generation able to use AI from age 20 for what previously required entire teams."},
+{q:"The most valuable skill combination in the AI era is?",opts:["Memorization","Autonomous questioning × systematic inquiry × AI collaboration","Test-taking skills","Following instructions"],ans:1,exp:"A person who asks good questions has hope in any era; in the AI era, their leverage is multiplied a thousandfold."},
+{q:"The fall of the professor era means for young people?",opts:["Doom","Dawn","No impact","More need for professors"],ans:1,exp:"Old knowledge monopolies break down; young people and veterans stand on nearly the same starting line — and youth may run faster."}
+],
+
+m6_nav:"6. Resources",m6_title:"Extended Learning Resources",m6_desc:"Curated external resources related to this course, helping you explore the transformation of education in the AI era.",
+
+mlab_nav:"7. Interactive Lab",mlab_title:"Interactive Laboratory",mlab_desc:"Explore the core concepts and models of this course through interactive tools.",
+
+date:"Version 2026.03.17",
+copyright:"For Educational Use Only",
+architect_label:"Architect:",
+architect_name:"Prof. Shihmin Lo",
+architect_url:"https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo"
+}
+};
+
+const TOTAL = 9; // M0 + M1-M5 + M6 + M7 + M8
+
+// ─── Reusable Components ───
+const H2=({children})=><h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] leading-tight">{children}</h2>;
+
+const FlipCard=({front,back,t})=>{
+  const[flipped,setFlipped]=useState(false);
+  return(
+    <div className="perspective cursor-pointer h-36" onClick={()=>setFlipped(!flipped)}>
+      <div className={`transform-style-3d relative w-full h-full transition-transform duration-500 ${flipped?'rotate-y-180':''}`}>
+        <div className="backface-hidden absolute inset-0 bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="font-serif font-bold text-center text-[#004030] dark:text-[#D8C3A5]">{front}</p>
+          <p className="text-xs text-slate-400 mt-2">{t.flip_prompt}</p>
+        </div>
+        <div className="backface-hidden rotate-y-180 absolute inset-0 bg-[#004030] dark:bg-slate-700 rounded-xl p-4 flex items-center justify-center">
+          <p className="text-sm text-center text-[#D8C3A5] dark:text-slate-200 leading-relaxed">{back}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModuleQuiz=({questions,t,moduleId,onQuizSubmit})=>{
+  const[selected,setSelected]=useState({});
+  const[submitted,setSubmitted]=useState(false);
+  const[quizIndices]=useState(()=>[...Array(questions.length).keys()].sort(()=>Math.random()-0.5).slice(0,4));
+  const score=submitted?quizIndices.filter((qIdx,i)=>selected[i]===questions[qIdx].ans).length:0;
+  return(
+    <div className="mt-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <h3 className="text-lg font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-6">{t.quiz_title}</h3>
+      {quizIndices.map((qIdx,i)=>{const q=questions[qIdx];return(
+        <div key={qIdx} className="mb-6">
+          <p className="font-bold mb-3">{i+1}. {q.q}</p>
+          <div className="space-y-2">{q.opts.map((opt,oIdx)=>(
+            <button key={oIdx} onClick={()=>!submitted&&setSelected(s=>({...s,[i]:oIdx}))}
+              className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm
+                ${submitted?oIdx===q.ans?'bg-green-100 border-green-500 dark:bg-green-900/30':selected[i]===oIdx?'bg-red-100 border-red-400 dark:bg-red-900/30':'border-slate-200 dark:border-slate-700':selected[i]===oIdx?'border-[#004030] dark:border-[#D8C3A5] bg-[#004030]/5':'border-slate-200 dark:border-slate-700 hover:border-slate-400'}`}>{opt}</button>
+          ))}</div>
+          {submitted&&<p className="mt-2 text-sm text-slate-600 dark:text-slate-400 italic">{t.explanation}: {q.exp}</p>}
+        </div>
+      );})}
+      {!submitted
+        ?<button onClick={()=>{setSubmitted(true);const c=quizIndices.filter((qIdx,i)=>selected[i]===questions[qIdx].ans).length;onQuizSubmit(moduleId,c,quizIndices.length);}}
+          disabled={Object.keys(selected).length<quizIndices.length}
+          className="px-6 py-2 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40">{t.submit}</button>
+        :<div className="flex items-center gap-4">
+          <span className="font-bold text-[#004030] dark:text-[#D8C3A5]">{t.score}: {score}/{quizIndices.length}</span>
+          <button onClick={()=>{setSelected({});setSubmitted(false);}}
+            className="px-6 py-2 border border-[#004030] dark:border-[#D8C3A5] text-[#004030] dark:text-[#D8C3A5] font-bold rounded-lg">{t.retry}</button>
+        </div>
+      }
+    </div>
+  );
+};
+
+const LinkCard=({label,url,desc})=>(
+  <a href={url} target="_blank" rel="noopener noreferrer"
+    className="block bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all group">
+    <div className="flex items-start justify-between gap-2 mb-2">
+      <span className="font-bold font-serif text-sm text-[#004030] dark:text-[#D8C3A5] group-hover:underline leading-snug">{label}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 text-slate-400"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </div>
+    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{desc}</p>
+  </a>
+);
+
+// ─── Lab Components (TOP-LEVEL) ───
+const EducationStackLab=({lang})=>{
+  const[aiLevel,setAiLevel]=useState(50);
+  const layers=lang==='zh'
+    ?[{name:'SDL 自主學習',base:70},{name:'TBL 團隊學習',base:60},{name:'PBL/PjBL',base:55},{name:'場域實習',base:65},{name:'教室功能',base:80},{name:'校園需求',base:75},{name:'教授角色',base:85}]
+    :[{name:'SDL',base:70},{name:'TBL',base:60},{name:'PBL/PjBL',base:55},{name:'Field Practicum',base:65},{name:'Classroom',base:80},{name:'Campus Need',base:75},{name:'Professor Role',base:85}];
+  const getAIImpact=(base,ai)=>{
+    if(base>70)return Math.max(10,base-ai*0.7);
+    return Math.min(100,base+ai*0.3);
+  };
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'AI 影響力模擬器':'AI Impact Simulator'}</h4>
+      <p className="text-sm text-slate-500 mb-4">{lang==='zh'?'調整 AI 滲透程度，觀察各教育元素的變化':'Adjust AI penetration level to observe changes in educational elements'}</p>
+      <div className="flex items-center gap-3 mb-6">
+        <span className="text-xs font-bold text-slate-500">AI 0%</span>
+        <input type="range" min="0" max="100" value={aiLevel} onChange={e=>setAiLevel(Number(e.target.value))} className="flex-1 accent-[#004030]"/>
+        <span className="text-xs font-bold text-slate-500">AI 100%</span>
+      </div>
+      <div className="space-y-3">
+        {layers.map((l,i)=>{
+          const val=Math.round(getAIImpact(l.base,aiLevel));
+          const color=val>60?'bg-[#004030] dark:bg-[#D8C3A5]':val>30?'bg-yellow-500':'bg-red-500';
+          return(
+            <div key={i}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-medium text-slate-600 dark:text-slate-400">{l.name}</span>
+                <span className="font-bold">{val}%</span>
+              </div>
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{width:`${val}%`}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const RoleSurvivalLab=({lang})=>{
+  const roles=lang==='zh'
+    ?[{name:'知識傳遞者',survival:5,reason:'AI 更有耐心、更客製化、24/7在線'},{name:'研究者（填坑型）',survival:8,reason:'Agentic AI 全自動流水線且不可偵測'},{name:'研究者（掀桌型）',survival:40,reason:'框架級突破暫時需要人類直覺，但<1%'},{name:'導師（功能性）',survival:10,reason:'Physical AI 規模化高品質陪伴'},{name:'導師（存在性）',survival:35,reason:'真人生命厚度，但非人人需要'},{name:'守門人',survival:25,reason:'品質控制仍需，但機制在鬆動'}]
+    :[{name:'Knowledge Deliverer',survival:5,reason:'AI is more patient, customizable, 24/7'},{name:'Researcher (Incremental)',survival:8,reason:'Agentic AI full pipeline, undetectable'},{name:'Researcher (Paradigm-shift)',survival:40,reason:'Framework-level breakthroughs need human intuition, but <1%'},{name:'Mentor (Functional)',survival:10,reason:'Physical AI scalable quality companionship'},{name:'Mentor (Existential)',survival:35,reason:'Human life depth, but not universally needed'},{name:'Gatekeeper',survival:25,reason:'Quality control needed, but mechanisms loosening'}];
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'教授角色存活率分析':'Professor Role Survival Analysis'}</h4>
+      <div className="space-y-4">
+        {roles.map((r,i)=>(
+          <div key={i}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium text-slate-700 dark:text-slate-300">{r.name}</span>
+              <span className="font-bold text-[#004030] dark:text-[#D8C3A5]">{r.survival}%</span>
+            </div>
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
+              <div className={`h-full rounded-full transition-all duration-700 ${r.survival>30?'bg-[#004030] dark:bg-[#D8C3A5]':r.survival>15?'bg-yellow-500':'bg-red-500'}`} style={{width:`${r.survival}%`}}/>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic">{r.reason}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const LearningEcosystemLab=({lang})=>{
+  const[selected,setSelected]=useState(null);
+  const nodes=lang==='zh'
+    ?[{id:'sdl',label:'SDL',x:50,y:15,desc:'自主學習——整個系統的引擎'},{id:'ai',label:'AI',x:50,y:50,desc:'Agentic AI——融入每個環節的催化劑'},{id:'tbl',label:'TBL',x:15,y:35,desc:'團隊學習——碰撞與加速'},{id:'pbl',label:'PBL/PjBL',x:85,y:35,desc:'問題與專案——探究與產出'},{id:'field',label:'場域',x:15,y:70,desc:'真實世界——不可替代的實戰'},{id:'campus',label:'校園',x:85,y:70,desc:'選配模組——儀式性共在'},{id:'student',label:'學生',x:50,y:88,desc:'AI 原住民——破曉的主角'}]
+    :[{id:'sdl',label:'SDL',x:50,y:15,desc:'Self-Directed Learning — the engine'},{id:'ai',label:'AI',x:50,y:50,desc:'Agentic AI — catalyst in every layer'},{id:'tbl',label:'TBL',x:15,y:35,desc:'Team-Based Learning — collision & acceleration'},{id:'pbl',label:'PBL/PjBL',x:85,y:35,desc:'Problem & Project — inquiry & output'},{id:'field',label:'Field',x:15,y:70,desc:'Real world — irreplaceable combat'},{id:'campus',label:'Campus',x:85,y:70,desc:'Optional module — ritual co-presence'},{id:'student',label:'Student',x:50,y:88,desc:'AI natives — the dawn protagonists'}];
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'未來學習生態系地圖':'Future Learning Ecosystem Map'}</h4>
+      <p className="text-sm text-slate-500 mb-4">{lang==='zh'?'點擊節點查看說明':'Click nodes to see details'}</p>
+      <div className="relative w-full" style={{paddingBottom:'70%'}}>
+        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+          <line x1="50" y1="15" x2="15" y2="35" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="15" x2="85" y2="35" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="15" y2="35" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="85" y2="35" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="15" y2="70" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="85" y2="70" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="50" y2="15" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="50" y1="50" x2="50" y2="88" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="15" y1="70" x2="50" y2="88" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="85" y1="70" x2="50" y2="88" stroke="#D8C3A5" strokeWidth="0.5" opacity="0.5"/>
+          {nodes.map(n=>(
+            <g key={n.id} onClick={()=>setSelected(selected===n.id?null:n.id)} className="cursor-pointer">
+              <circle cx={n.x} cy={n.y} r={selected===n.id?5:3.5} fill={selected===n.id?'#D8C3A5':'#004030'} className="transition-all duration-300"/>
+              <text x={n.x} y={n.y-5} textAnchor="middle" fill="#004030" className="dark:fill-[#D8C3A5]" fontSize="3" fontWeight="bold">{n.label}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      {selected&&<div className="mt-3 p-3 bg-[#004030]/5 dark:bg-[#D8C3A5]/10 rounded-lg"><p className="text-sm font-medium text-[#004030] dark:text-[#D8C3A5]">{nodes.find(n=>n.id===selected)?.desc}</p></div>}
+    </div>
+  );
+};
+
+const TimelineLab=({lang})=>{
+  const events=lang==='zh'
+    ?[{year:'Q1',label:'給魚 vs 教釣魚',tag:'起點'},{year:'Q2-3',label:'EMI/EML · 使用 vs 製作 AI',tag:'基礎'},{year:'Q4-5',label:'SDL/TBL · PBL/PjBL',tag:'方法論'},{year:'Q6-7',label:'翻轉/場域 · 實習/交換',tag:'場域'},{year:'Q8-9',label:'創新教學 · AI 融入',tag:'教學'},{year:'Q10',label:'AI + EML → EMI 質變',tag:'翻轉'},{year:'Q11-12',label:'教室/校園存廢',tag:'解構'},{year:'Q13-15',label:'教授角色全面瓦解',tag:'衝擊'},{year:'Q16',label:'年輕人的破曉',tag:'希望'}]
+    :[{year:'Q1',label:'Give fish vs teach fishing',tag:'Origin'},{year:'Q2-3',label:'EMI/EML · Use vs Build AI',tag:'Foundation'},{year:'Q4-5',label:'SDL/TBL · PBL/PjBL',tag:'Methods'},{year:'Q6-7',label:'Flipped/Field · Intern/Exchange',tag:'Venues'},{year:'Q8-9',label:'Innovation · AI Integration',tag:'Teaching'},{year:'Q10',label:'AI + EML → EMI shifts',tag:'Flip'},{year:'Q11-12',label:'Classroom/Campus obsolescence',tag:'Deconstruct'},{year:'Q13-15',label:'Professor roles collapse',tag:'Impact'},{year:'Q16',label:"Young people's dawn",tag:'Hope'}];
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'探究旅程時間軸':'Inquiry Journey Timeline'}</h4>
+      <div className="relative pl-6">
+        <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-[#D8C3A5]"/>
+        {events.map((e,i)=>(
+          <div key={i} className="relative mb-4 last:mb-0">
+            <div className="absolute -left-4 top-1 w-3 h-3 rounded-full bg-[#004030] dark:bg-[#D8C3A5] border-2 border-white dark:border-slate-800"/>
+            <div className="ml-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold text-[#D8C3A5] bg-[#004030] dark:bg-[#D8C3A5] dark:text-[#004030] px-2 py-0.5 rounded">{e.year}</span>
+                <span className="text-xs text-slate-400">{e.tag}</span>
+              </div>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{e.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SocraticMethodLab=({lang})=>{
+  const[step,setStep]=useState(0);
+  const steps=lang==='zh'
+    ?['提出對比性問題 (A vs B)','拆解兩端的定義與本質','用比喻讓抽象具象化','揭示兩者是互補而非對立','在答案上再推一步，引出下一題','循環深入，直到觸及根本假設']
+    :['Pose a comparative question (A vs B)','Deconstruct definitions & essence of both sides','Use metaphors to make abstractions concrete','Reveal complementarity, not opposition','Push one step further on the answer to the next question','Cycle deeper until fundamental assumptions are reached'];
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'蘇格拉底提問法模擬':'Socratic Method Simulator'}</h4>
+      <div className="space-y-2 mb-4">
+        {steps.map((s,i)=>(
+          <div key={i} onClick={()=>setStep(i)}
+            className={`p-3 rounded-lg cursor-pointer transition-all text-sm ${i===step?'bg-[#004030] text-white dark:bg-[#D8C3A5] dark:text-[#004030] font-bold':'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+            <span className="font-bold mr-2">{i+1}.</span>{s}
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={()=>setStep(Math.max(0,step-1))} disabled={step===0} className="px-3 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded disabled:opacity-30">←</button>
+        <button onClick={()=>setStep(Math.min(steps.length-1,step+1))} disabled={step===steps.length-1} className="px-3 py-1 text-xs bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] rounded disabled:opacity-30">→</button>
+      </div>
+    </div>
+  );
+};
+
+const FutureReadinessLab=({lang})=>{
+  const[scores,setScores]=useState({curiosity:5,questioning:5,ai_collab:5,resilience:5,cross_domain:5});
+  const labels=lang==='zh'?{curiosity:'好奇心',questioning:'提問力',ai_collab:'AI 協作',resilience:'韌性',cross_domain:'跨域連結'}:{curiosity:'Curiosity',questioning:'Questioning',ai_collab:'AI Collaboration',resilience:'Resilience',cross_domain:'Cross-domain'};
+  const total=Object.values(scores).reduce((a,b)=>a+b,0);
+  const max=50;
+  return(
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{lang==='zh'?'未來準備度自評':'Future Readiness Self-Assessment'}</h4>
+      <div className="space-y-4">
+        {Object.entries(scores).map(([key,val])=>(
+          <div key={key}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium text-slate-600 dark:text-slate-400">{labels[key]}</span>
+              <span className="font-bold">{val}/10</span>
+            </div>
+            <input type="range" min="1" max="10" value={val} onChange={e=>setScores(s=>({...s,[key]:Number(e.target.value)}))} className="w-full accent-[#004030]"/>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 p-3 bg-[#004030]/5 dark:bg-[#D8C3A5]/10 rounded-lg text-center">
+        <span className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{total}/{max}</span>
+        <p className="text-xs text-slate-500 mt-1">{lang==='zh'?'未來準備度總分':'Future Readiness Score'}</p>
+      </div>
+    </div>
+  );
+};
+
+// ─── App ───
+function App(){
+  const[lang,setLang]=useState('zh');
+  const[isDark,setIsDark]=useState(false);
+  const[module,setModule]=useState(0);
+  const[menuOpen,setMenuOpen]=useState(false);
+  const[ttsState,setTtsState]=useState('idle');
+  const[studentInfo,setStudentInfo]=useState({group:'',dept:'',id:'',name:''});
+  const[analytics,setAnalytics]=useState({time:Array(TOTAL).fill(0),clicks:Array(TOTAL).fill(0),quizCorrect:Array(TOTAL).fill(0),quizTotal:Array(TOTAL).fill(0)});
+  const contentRef=useRef(null);
+  const menuRef=useRef(null);
+  const t=dict[lang];
+
+  // Dark mode
+  useEffect(()=>{isDark?document.documentElement.classList.add('dark'):document.documentElement.classList.remove('dark');},[isDark]);
+
+  // Timer
+  useEffect(()=>{const iv=setInterval(()=>{setAnalytics(a=>{const nt=[...a.time];nt[module]++;return{...a,time:nt};});},1000);return()=>clearInterval(iv);},[module]);
+
+  // Click tracking
+  const handleContentClick=()=>{setAnalytics(a=>{const nc=[...a.clicks];nc[module]++;return{...a,clicks:nc};});};
+
+  // Quiz submit
+  const handleQuizSubmit=(mid,correct,total)=>{setAnalytics(a=>{const qc=[...a.quizCorrect],qt=[...a.quizTotal];qc[mid]=correct;qt[mid]=total;return{...a,quizCorrect:qc,quizTotal:qt};});};
+
+  // Menu outside click
+  useEffect(()=>{if(!menuOpen)return;const h=(e)=>{if(menuRef.current&&!menuRef.current.contains(e.target))setMenuOpen(false);};document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h);},[menuOpen]);
+
+  // Module switch
+  const switchModule=(m)=>{setModule(m);window.scrollTo({top:0,behavior:'smooth'});if(ttsState!=='idle'){window.speechSynthesis.cancel();setTtsState('idle');}};
+
+  // TTS
+  const handleTTS=(action)=>{
+    if(!('speechSynthesis' in window))return;
+    if(action==='stop'){window.speechSynthesis.cancel();setTtsState('idle');return;}
+    if(action==='pause'){window.speechSynthesis.pause();setTtsState('paused');return;}
+    if(action==='play'){
+      if(ttsState==='paused'){window.speechSynthesis.resume();setTtsState('playing');return;}
+      window.speechSynthesis.cancel();
+      const sep=lang==='zh'?'。 ':'. ';
+      let texts=[];
+      if(module===0){texts=[t.m0_title,t.m0_intro,t.m0_why,t.m0_why_desc,...(t.m0_stats||[]).map(s=>`${s.label}: ${s.val}`),...(t.m0_modules||[]).map(m=>`${m.title}. ${m.desc}`)].filter(Boolean);}
+      else if(module>=1&&module<=5){const mk=`m${module}`;texts=[t[`${mk}_title`],t[`${mk}_p1`],t[`${mk}_p2`],t[`${mk}_p3`],...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc}`),...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back])].filter(Boolean);}
+      else if(module===6){texts=[t.m6_title,t.m6_desc].filter(Boolean);}
+      else if(module===7){texts=[t.mlab_title,t.mlab_desc].filter(Boolean);}
+      else{texts=[t.analytics_title,t.analytics_desc].filter(Boolean);}
+      const text=texts.join(sep);
+      const utterance=new SpeechSynthesisUtterance(text);
+      utterance.rate=0.95;
+      const voices=window.speechSynthesis.getVoices();
+      if(lang==='zh'){const v=voices.find(v=>v.lang==='zh-TW'&&v.name.includes('Yating'))||voices.find(v=>v.lang==='zh-TW')||voices.find(v=>v.lang.startsWith('zh'));if(v)utterance.voice=v;utterance.lang='zh-TW';}
+      else{const v=voices.find(v=>v.lang==='en-GB'&&(v.name.includes('Male')||v.name.includes('Daniel')))||voices.find(v=>v.lang==='en-GB')||voices.find(v=>v.lang.startsWith('en'));if(v)utterance.voice=v;utterance.lang='en-GB';}
+      utterance.onend=()=>setTtsState('idle');
+      utterance.onerror=()=>setTtsState('idle');
+      window.speechSynthesis.speak(utterance);
+      setTtsState('playing');
+    }
+  };
+
+  // CSV export
+  const exportCSV=()=>{
+    const bom='\uFEFF';
+    const headers=['Module','Time(s)','Clicks','Correct','Answered','Total Questions','Accuracy'];
+    const modNames=[t.m0_nav,t.m1_nav,t.m2_nav,t.m3_nav,t.m4_nav,t.m5_nav,t.m6_nav,t.mlab_nav,t.analytics_title];
+    let rows=modNames.map((name,i)=>[name,analytics.time[i],analytics.clicks[i],analytics.quizCorrect[i],analytics.quizTotal[i],i>=1&&i<=5?8:0,analytics.quizTotal[i]>0?Math.round(analytics.quizCorrect[i]/analytics.quizTotal[i]*100)+'%':'N/A'].join(','));
+    const meta=`\nStudent Info\nGroup,${studentInfo.group}\nDept,${studentInfo.dept}\nID,${studentInfo.id}\nName,${studentInfo.name}`;
+    const csv=bom+headers.join(',')+'\n'+rows.join('\n')+meta;
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='learning_analytics.csv';a.click();URL.revokeObjectURL(url);
+  };
+
+  const moduleIcons=[<IconBookOpen size={16}/>,<IconLayers size={16}/>,<IconFlag size={16}/>,<IconCpu size={16}/>,<IconTrendingUp size={16}/>,<IconZap size={16}/>,<IconGlobe size={16}/>,<IconZapLab size={16}/>,<IconActivity size={16}/>];
+  const modulesList=[
+    {id:0,title:t.m0_nav,icon:moduleIcons[0]},
+    {id:1,title:t.m1_nav,icon:moduleIcons[1]},
+    {id:2,title:t.m2_nav,icon:moduleIcons[2]},
+    {id:3,title:t.m3_nav,icon:moduleIcons[3]},
+    {id:4,title:t.m4_nav,icon:moduleIcons[4]},
+    {id:5,title:t.m5_nav,icon:moduleIcons[5]},
+    {id:6,title:t.m6_nav,icon:moduleIcons[6]},
+    {id:7,title:t.mlab_nav,icon:moduleIcons[7]},
+    {id:8,title:t.analytics_title,icon:moduleIcons[8]}
+  ];
+
+  const fade='animate-fade-in';
+
+  const renderModule=(mk)=>{
+    const mKey=`m${mk}`;
+    return(
+      <div className={`space-y-6 text-lg leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`}>
+        <H2>{t[`${mKey}_title`]}</H2>
+        <p>{t[`${mKey}_p1`]}</p>
+        <p className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg italic font-serif text-base">{t[`${mKey}_p2`]}</p>
+        <p>{t[`${mKey}_p3`]}</p>
+        {t[`${mKey}_cards`]&&(
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {t[`${mKey}_cards`].map((c,i)=>(
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <h4 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-2">{c.title}</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mt-8">
+          <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4">{t.key_terms}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {t[`${mKey}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}
+          </div>
+        </div>
+        <ModuleQuiz questions={t[`${mKey}_q`]} t={t} moduleId={module} onQuizSubmit={handleQuizSubmit}/>
+      </div>
+    );
+  };
+
+  const renderResources=()=>{
+    const mainLinks=lang==='zh'
+      ?[{label:'Anthropic — Claude AI',url:'https://www.anthropic.com',desc:'本課程互動探究的 AI 對話夥伴'},{label:'UNESCO — AI in Education',url:'https://www.unesco.org/en/digital-education/artificial-intelligence',desc:'聯合國教科文組織 AI 教育政策與指引'},{label:'OECD Future of Education',url:'https://www.oecd.org/education/2030-project/',desc:'OECD 2030 教育願景與能力框架'},{label:'Bloom\'s Taxonomy Revisited',url:'https://cft.vanderbilt.edu/guides-sub-pages/blooms-taxonomy/',desc:'Bloom 認知層次分類——理解教學設計的基礎框架'}]
+      :[{label:'Anthropic — Claude AI',url:'https://www.anthropic.com',desc:'The AI dialogue partner used in this course\'s inquiry'},{label:'UNESCO — AI in Education',url:'https://www.unesco.org/en/digital-education/artificial-intelligence',desc:'UNESCO AI education policies and guidelines'},{label:'OECD Future of Education',url:'https://www.oecd.org/education/2030-project/',desc:'OECD 2030 education vision and competency framework'},{label:'Bloom\'s Taxonomy Revisited',url:'https://cft.vanderbilt.edu/guides-sub-pages/blooms-taxonomy/',desc:'Understanding the foundational framework of instructional design'}];
+    const otherLinks=lang==='zh'
+      ?[{icon:'📚',cat:lang==='zh'?'學習方法論':'Learning Methodology',items:[{label:'Team-Based Learning Collaborative',url:'https://www.teambasedlearning.org',desc:'TBL 官方社群與資源'},{label:'Problem-Based Learning at Maastricht',url:'https://www.maastrichtuniversity.nl/education/why-um/problem-based-learning',desc:'PBL 發源地馬斯垂克大學的介紹'}]},{icon:'🤖',cat:lang==='zh'?'AI 與教育':'AI & Education',items:[{label:'Stanford HAI — AI in Education',url:'https://hai.stanford.edu/education',desc:'史丹佛人本 AI 研究院教育專題'},{label:'MIT Teaching Systems Lab',url:'https://tsl.mit.edu',desc:'MIT 教學系統實驗室——探索 AI 時代的教師角色'}]}]
+      :[{icon:'📚',cat:'Learning Methodology',items:[{label:'Team-Based Learning Collaborative',url:'https://www.teambasedlearning.org',desc:'Official TBL community and resources'},{label:'Problem-Based Learning at Maastricht',url:'https://www.maastrichtuniversity.nl/education/why-um/problem-based-learning',desc:'PBL\'s birthplace — Maastricht University introduction'}]},{icon:'🤖',cat:'AI & Education',items:[{label:'Stanford HAI — AI in Education',url:'https://hai.stanford.edu/education',desc:'Stanford Human-Centered AI Institute education topics'},{label:'MIT Teaching Systems Lab',url:'https://tsl.mit.edu',desc:'MIT TSL — exploring teacher roles in the AI era'}]}];
+    return(
+      <div className={`space-y-10 ${fade}`}>
+        <H2>{t.m6_title}</H2>
+        <p className="text-slate-600 dark:text-slate-400">{t.m6_desc}</p>
+        <div className="grid md:grid-cols-2 gap-3">{mainLinks.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
+        {otherLinks.map((sec,si)=>(
+          <div key={si}>
+            <h4 className="flex items-center gap-2 text-base font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3"><span>{sec.icon}</span>{sec.cat}</h4>
+            <div className="grid md:grid-cols-2 gap-3">{sec.items.map((l,i)=><LinkCard key={i} {...l}/>)}</div>
+          </div>
+        ))}
+        <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 rounded-xl p-5 border border-[#004030]/20 dark:border-[#D8C3A5]/20">
+          <p className="text-sm text-slate-600 dark:text-slate-400">⚠️ {lang==='zh'?'外部連結僅供學習參考，內容由各網站自行維護，不代表本課程立場。':'External links are for learning reference only. Content is maintained by respective sites and does not represent this course\'s position.'}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLab=()=>(
+    <div className={`space-y-8 ${fade}`}>
+      <H2>{t.mlab_title}</H2>
+      <p className="mt-4 text-slate-600 dark:text-slate-400">{t.mlab_desc}</p>
+      <EducationStackLab lang={lang}/>
+      <div className="grid md:grid-cols-2 gap-6">
+        <RoleSurvivalLab lang={lang}/>
+        <LearningEcosystemLab lang={lang}/>
+      </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <TimelineLab lang={lang}/>
+        <SocraticMethodLab lang={lang}/>
+      </div>
+      <FutureReadinessLab lang={lang}/>
+    </div>
+  );
+
+  const renderAnalytics=()=>{
+    const totalTime=analytics.time.reduce((a,b)=>a+b,0);
+    const totalClicks=analytics.clicks.reduce((a,b)=>a+b,0);
+    const totalCorrect=analytics.quizCorrect.reduce((a,b)=>a+b,0);
+    const totalAnswered=analytics.quizTotal.reduce((a,b)=>a+b,0);
+    const overallAcc=totalAnswered>0?Math.round(totalCorrect/totalAnswered*100):0;
+    const canExport=studentInfo.group&&studentInfo.dept&&studentInfo.id&&studentInfo.name;
+    const modNames=[t.m0_nav,t.m1_nav,t.m2_nav,t.m3_nav,t.m4_nav,t.m5_nav,t.m6_nav,t.mlab_nav,t.analytics_title];
+    return(
+      <div className={`space-y-8 ${fade}`}>
+        <H2>{t.analytics_title}</H2>
+        <p className="text-slate-600 dark:text-slate-400">{t.analytics_desc}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
+            <div className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{Math.floor(totalTime/60)}:{String(totalTime%60).padStart(2,'0')}</div>
+            <div className="text-xs text-slate-500">{t.analytics_total_time}</div>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
+            <div className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{totalClicks}</div>
+            <div className="text-xs text-slate-500">{t.analytics_total_clicks}</div>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
+            <div className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{overallAcc}%</div>
+            <div className="text-xs text-slate-500">{t.analytics_overall_acc}</div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <th className="text-left p-3 font-bold">{t.analytics_module}</th>
+              <th className="text-right p-3 font-bold">{t.analytics_time}</th>
+              <th className="text-right p-3 font-bold">{t.analytics_clicks}</th>
+              <th className="text-right p-3 font-bold">{t.analytics_correct_ans_total}</th>
+            </tr></thead>
+            <tbody>{modNames.map((name,i)=>(
+              <tr key={i} className="border-b border-slate-100 dark:border-slate-700/50">
+                <td className="p-3 font-medium">{name}</td>
+                <td className="p-3 text-right">{analytics.time[i]}{t.analytics_sec}</td>
+                <td className="p-3 text-right">{analytics.clicks[i]}{t.analytics_times}</td>
+                <td className="p-3 text-right">{analytics.quizTotal[i]>0?`${analytics.quizCorrect[i]} / ${analytics.quizTotal[i]} / ${i>=1&&i<=5?8:0}`:t.analytics_no_data}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+          <h3 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{t.analytics_form_title}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_group}</label>
+              <select value={studentInfo.group} onChange={e=>setStudentInfo(s=>({...s,group:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm">
+                <option value="">--</option>
+                {t.group_options.map(g=><option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_dept}</label>
+              <input placeholder={t.analytics_dept_ph} value={studentInfo.dept} onChange={e=>setStudentInfo(s=>({...s,dept:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_id}</label>
+              <input placeholder={t.analytics_id_ph} value={studentInfo.id} onChange={e=>setStudentInfo(s=>({...s,id:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_name}</label>
+              <input placeholder={t.analytics_name_ph} value={studentInfo.name} onChange={e=>setStudentInfo(s=>({...s,name:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
+            </div>
+          </div>
+          <button onClick={exportCSV} disabled={!canExport}
+            className="mt-4 px-6 py-2 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40 text-sm">
+            {canExport?t.analytics_export_csv:t.analytics_fill_required}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent=()=>{
+    switch(module){
+      case 0:return(
+        <div className={`space-y-8 text-lg leading-relaxed text-slate-700 dark:text-slate-300 ${fade}`}>
+          <div className="bg-[#004030] dark:bg-slate-800 rounded-2xl p-6 sm:p-8 text-white">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#D8C3A5] mb-3">{lang==='zh'?'課程簡介':'Course Introduction'}</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-white mb-4">{t.m0_title}</h2>
+            <p className="text-[#D8C3A5]/90 text-base leading-relaxed">{t.m0_intro}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border-l-4 border-[#D8C3A5] shadow-sm">
+            <h3 className="text-xl font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-3">{t.m0_why}</h3>
+            <p className="text-base">{t.m0_why_desc}</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {t.m0_stats.map((s,i)=>(
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="text-2xl md:text-3xl font-black font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{s.val}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold uppercase tracking-wider text-slate-500 mb-4">{lang==='zh'?'課程模組':'Course Modules'}</h3>
+            <div className="space-y-3">
+              {t.m0_modules.map((m,i)=>(
+                <button key={i} onClick={()=>switchModule(i+1)}
+                  className="w-full flex items-center gap-5 bg-white dark:bg-slate-800 rounded-xl px-6 py-4 border border-slate-200 dark:border-slate-700 hover:border-[#004030] dark:hover:border-[#D8C3A5] hover:shadow-md transition-all group text-left">
+                  <div className="text-3xl font-black font-serif text-[#D8C3A5] w-10 shrink-0">{m.num}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-1">{m.title}</div>
+                    <div className="text-sm text-slate-500">{m.desc}</div>
+                  </div>
+                  <IconChevronRight size={20} className="text-slate-300 group-hover:text-[#004030] dark:group-hover:text-[#D8C3A5] shrink-0"/>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={()=>switchModule(1)} className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] dark:hover:bg-white rounded-lg shadow-md transition-all">{t.m0_start}</button>
+          </div>
+        </div>
+      );
+      case 1:case 2:case 3:case 4:case 5:return renderModule(module);
+      case 6:return renderResources();
+      case 7:return renderLab();
+      case 8:return renderAnalytics();
+      default:return null;
+    }
+  };
+
+  return(
+    <div className="min-h-screen bg-[#f4f4f4] dark:bg-[#121212] font-sans flex flex-col overflow-x-hidden pt-16">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-[#004030] dark:bg-slate-900 text-white z-50 shadow-lg border-b border-[#D8C3A5]/30">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative" ref={menuRef}>
+              <button onClick={()=>setMenuOpen(!menuOpen)} className="p-2 hover:bg-white/10 rounded-lg transition-colors" aria-label="Toggle menu">
+                {menuOpen?<IconX size={20}/>:<IconMenu size={20}/>}
+              </button>
+              {menuOpen&&(
+                <div className="absolute top-full left-0 mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[100] overflow-x-hidden">
+                  <div className="bg-[#004030]/5 dark:bg-[#D8C3A5]/5 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.nav_modules}</p>
+                  </div>
+                  {modulesList.map(m=>(
+                    <button key={m.id} onClick={()=>{switchModule(m.id);setMenuOpen(false);}}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left
+                        ${module===m.id?'bg-[#004030] text-white dark:bg-[#D8C3A5]/20 dark:text-[#D8C3A5] font-bold':'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                      <span className={module===m.id?'text-[#D8C3A5]':'opacity-50'}>{m.icon}</span>
+                      <span className="truncate">{m.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-2 text-white hover:text-[#D8C3A5] transition-colors">
+              <span className="font-serif font-black text-[#D8C3A5] text-lg tracking-widest">ENT</span>
+              <span className="hidden sm:inline font-serif font-bold text-sm md:text-base text-white">{t.title}</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 mr-1 sm:mr-2">
+              {ttsState==='idle'&&<button onClick={()=>handleTTS('play')} className="p-1.5 hover:bg-white/10 rounded-lg" title={t.audio_read}><IconPlay size={16}/></button>}
+              {ttsState==='playing'&&<><button onClick={()=>handleTTS('pause')} className="p-1.5 hover:bg-white/10 rounded-lg"><IconPause size={16}/></button><button onClick={()=>handleTTS('stop')} className="p-1.5 hover:bg-white/10 rounded-lg"><IconSquare size={16}/></button></>}
+              {ttsState==='paused'&&<><button onClick={()=>handleTTS('play')} className="p-1.5 hover:bg-white/10 rounded-lg"><IconPlay size={16}/></button><button onClick={()=>handleTTS('stop')} className="p-1.5 hover:bg-white/10 rounded-lg"><IconSquare size={16}/></button></>}
+            </div>
+            <button onClick={()=>setLang(lang==='zh'?'en':'zh')} className="px-2 py-1 text-xs sm:text-sm font-bold border border-[#D8C3A5]/50 rounded-lg hover:bg-white/10 transition-colors">{lang==='zh'?'EN':'中'}</button>
+            <button onClick={()=>setIsDark(!isDark)} className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg">{isDark?<IconSun size={18}/>:<IconMoon size={18}/>}</button>
+          </div>
+        </div>
+      </header>
+
+      {/* Body */}
+      <div className="flex-1 flex max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-6 gap-6">
+        {/* Sidebar */}
+        <aside className="hidden md:block w-64 shrink-0">
+          <div className="sticky top-20 space-y-1">
+            {modulesList.map(m=>(
+              <button key={m.id} onClick={()=>switchModule(m.id)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left
+                  ${module===m.id?'bg-[#004030] text-white dark:bg-[#D8C3A5]/20 dark:text-[#D8C3A5] font-bold shadow-sm':'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-[#004030] dark:hover:text-[#D8C3A5]'}`}>
+                <span className={module===m.id?'text-[#D8C3A5]':'opacity-50'}>{m.icon}</span>
+                <span className="truncate">{m.title}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* Main */}
+        <main className="flex-1 min-w-0" onClick={handleContentClick} ref={contentRef}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-6 md:p-8">
+            {renderContent()}
+          </div>
+          {/* Bottom nav */}
+          <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-300 dark:border-slate-700">
+            <button onClick={()=>switchModule(Math.max(0,module-1))} disabled={module===0}
+              className="px-6 py-3 font-serif font-bold text-slate-500 hover:text-[#004030] dark:hover:text-[#D8C3A5] disabled:opacity-0 uppercase text-sm tracking-wider flex items-center">
+              ← {t.nav_prev}
+            </button>
+            <button onClick={()=>switchModule(Math.min(TOTAL-1,module+1))} disabled={module===TOTAL-1}
+              className="px-8 py-3 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-serif font-bold hover:bg-[#002b20] dark:hover:bg-white disabled:opacity-0 uppercase text-sm tracking-wider shadow-md flex items-center">
+              {t.nav_next} <IconArrowRight size={16} className="ml-2"/>
+            </button>
+          </div>
+        </main>
+      </div>
+
+      {/* Footer */}
+      <footer className="h-8 bg-[#004030] flex items-center justify-between px-4 shrink-0">
+        <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs">{t.date} · {t.copyright}</span>
+        <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs flex items-center gap-1">
+          Architect:&nbsp;
+          <a href="https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo" target="_blank" rel="noopener noreferrer"
+            className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a>
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
