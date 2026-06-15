@@ -35,6 +35,21 @@ tailwind.config = {
 <script type="text/babel">
 const {useState, useEffect, useRef, useCallback} = React;
 
+/* Answer Decoder (XOR+Base64) */
+const _SALT='EDU_2026';
+const _d=(token)=>{try{const d=atob(token);let r='';for(let i=0;i<d.length;i++)r+=String.fromCharCode(d.charCodeAt(i)^((i+7)*3&0xFF));return parseInt(r.split(':')[1],10)}catch(e){return -1}};
+
+/* Option Shuffler */
+const shuffleOptions=(opts,ci)=>{const idx=[...Array(opts.length).keys()];for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}return{shuffledOpts:idx.map(i=>opts[i]),newCorrectIdx:idx.indexOf(ci)}};
+
+/* Friendly Security */
+let _tt=null;
+const showToast=()=>{let t=document.getElementById('cr-toast');if(!t){t=document.createElement('div');t.id='cr-toast';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#004030;color:#D8C3A5;padding:10px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3)';t.textContent='\u00a9 For Educational Use Only — Prof. Shihmin Lo, NCNU';document.body.appendChild(t)}t.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>{t.style.opacity='0'},2500)};
+document.addEventListener('contextmenu',e=>{const s=window.getSelection();if(s&&s.toString().trim().length>0)return;e.preventDefault();showToast()});
+document.addEventListener('keydown',e=>{if(e.key==='F12'){e.preventDefault();showToast();return}if(e.ctrlKey&&e.key==='u'){e.preventDefault();showToast();return}if(e.ctrlKey&&e.shiftKey&&'IJCijc'.includes(e.key)){e.preventDefault();showToast();return}});
+document.addEventListener('dragstart',e=>{if(['IMG','SVG','svg'].includes(e.target.tagName)){e.preventDefault();showToast()}});
+
+
 // ─── Icons ───
 const IconBookOpen=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>;
 const IconAlertTriangle=({size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
@@ -66,8 +81,8 @@ brand:"EDU",
 title:"AI 時代教育大解構",subtitle:"從學習方法到校園存廢的蘇格拉底式探究",
 nav_modules:"單元目錄",nav_prev:"上一單元",nav_next:"下一單元",
 key_terms:"關鍵專有名詞",flip_prompt:"點擊翻轉",audio_read:"語音導覽",
-quiz_title:"模組知識檢定（隨機 4 題）",
-submit:"提交答案",retry:"重新測驗",
+quiz_title_fn:(picked,total,mastered)=>`模組知識檢定（隨機 ${picked} 題 / 共 ${total} 題，已精熟 ${mastered} 題）`,quiz_all_mastered:"恭喜！本模組所有題目已全部精熟 🎉",quiz_title:"模組知識檢定",
+submit:"送出答案",retry:"重新測驗",
 score:"得分",correct:"正確",incorrect:"錯誤",explanation:"解析",
 
 analytics_title:"學習歷程分析",analytics_desc:"追蹤你在各模組的學習時間、互動次數與測驗表現。",analytics_form_title:"個人資訊（匯出 CSV 用）",
@@ -76,6 +91,7 @@ analytics_id:"學號",analytics_id_ph:"例：112212099",
 analytics_name:"姓名",analytics_name_ph:"例：Jimmy Lo",
 analytics_export_csv:"匯出 CSV 歷程記錄",
 analytics_fill_required:"請填寫完整資訊以解鎖匯出",
+analytics_save_local:"更新在地儲存",analytics_saved:"已儲存！",analytics_loaded:"已載入歷程記錄",analytics_no_saved:"尚無儲存記錄",
 group_options:["G1","G2","G3","G4","G5","G6","Others"],
 analytics_total_time:"總學習時間",analytics_total_clicks:"總互動點擊",
 analytics_overall_acc:"總體測驗答對率",
@@ -104,9 +120,11 @@ m0_start:"開始學習 →",
 
 // M1
 m1_nav:"1. 學習方法論",m1_title:"學習方法論的對決",
-m1_p1:"教育的起點是一個古老的問題：「你要我釣魚給你，還是教你釣魚？」這個問題引出了學習方法論中四組關鍵對比——SDL vs TBL、PBL vs PjBL。每一組都不是二選一，而是相互增強的動態系統。",
-m1_p2:"「SDL 是引擎，TBL 是加速器。沒有 SDL 能力的人進入 TBL，會變成搭便車的乘客。反過來，只有 SDL 沒有 TBL，容易陷入認知盲點的迴聲室。」",
-m1_p3:"PBL 像醫生看診——面對複雜問題，抽絲剝繭找病因；PjBL 像建築師蓋房子——從設計到施工交出成品。最強的學習設計是用 PBL 的精神啟動探究，再用 PjBL 的框架落地產出。",
+m1_p1:"教育的起點是一個古老的問題：「你要我釣魚給你，還是教你釣魚？」這句話出自經典諺語「授人以魚，不如授人以漁」——給人一條魚只能飽一餐，教人釣魚才能一輩子不餓。但在 AI 時代，答案更進一步：AI 先給你魚吃著，同時教你怎麼釣，甚至幫你重新設計整個漁業系統。這個問題引出學習方法論中四組關鍵對比：SDL vs TBL、PBL vs PjBL。每一組都不是二選一，而是理解各自角色後組合成動態互補的學習系統。",
+m1_p2:"「SDL 是引擎，TBL 是加速器。沒有 SDL 能力的人進入 TBL，會變成搭便車的乘客——依賴別人討論、抄別人答案，表面參與實際什麼都沒學到。反過來，只有 SDL 沒有 TBL，容易陷入認知盲點的迴聲室——你以為自己懂了，其實只是在自己的理解裡打轉。團隊的價值在於暴露你的認知盲區：當別人觀點跟你不同，你才被迫重新審視自己的理解。」",
+m1_p3:"PBL（Problem-Based Learning）像醫生看診——面對症狀複雜的病人，抽絲剝繭找病因，過程就是學習，不一定要產出成品。起源於醫學教育。PjBL（Project-Based Learning）像建築師蓋房——從設計到施工交出真正的建築，培養規劃執行、團隊協作、時間管理、溝通展示的能力。最強學習設計是用 PBL 精神啟動探究（真實問題激發動機），再用 PjBL 架構落地產出。",
+m1_p4:"SDL 和 TBL 形成增強循環：自主學習→團隊碰撞→發現不足→回去自學→再驗證。循環越快學習越深。TBL 第一步是個人測驗——檢驗 SDL 品質。SDL 是 TBL 的前提：你得先有料，團隊討論才有品質。一個有強大 SDL 的人就算沒有團隊也能持續成長；沒有 SDL 的人放進再好的團隊也只是湊人數。",
+m1_p5:"使用 AI 應用重要還是製作 AI 應用重要？對絕大多數人來說學會使用遠比製作重要。理由一：不是每個人都需要當 AI 工程師，但幾乎每個人都需要跟 AI 協作。理由二：AI 工具發展方向就是讓製作越來越接近使用——界線正在模糊。理由三：核心能力是提問與判斷——不管使用還是製作，最關鍵的是你能不能問對問題、判斷 AI 產出品質。最務實的路徑：先學會用、用到精熟、自然想動手做。使用是地基，製作是上面蓋的樓。如果你已經很會使用 AI，再往製作邁進一步，你的能力會產生乘數效應——不只能解決自己的問題，還能為一群人打造解決方案。",
 m1_cards:[
 {title:"SDL 自主學習",desc:"學習者自己設定目標、規劃路徑、尋找資源、監控進度、反思調整。核心是個人的學習主權。"},
 {title:"TBL 團隊學習",desc:"透過團隊合作深化理解：課前預習→個人測驗→團隊測驗→應用練習。核心是社群碰撞建構知識。"},
@@ -119,21 +137,23 @@ m1_terms:[
 {front:"PBL vs PjBL",back:"Problem-Based vs Project-Based：PBL 重探究過程（像看診），PjBL 重產出成品（像蓋房）。最佳設計是結合兩者。"}
 ],
 m1_q:[
-{q:"SDL 在 TBL 中扮演什麼角色？",opts:["加速器","引擎","煞車","裝飾"],ans:1,exp:"SDL 是引擎——提供個人學習動力；TBL 是加速器——透過團隊碰撞放大學習效果。"},
-{q:"沒有 SDL 能力的人進入 TBL 會怎樣？",opts:["成為領導者","搭便車","自動學會","退出團隊"],ans:1,exp:"沒有自主學習基礎，在團隊中只能依賴他人，變成搭便車的乘客。"},
-{q:"PBL 最像哪種角色？",opts:["建築師","醫生","廚師","運動員"],ans:1,exp:"PBL 像醫生看診——面對複雜症狀，抽絲剝繭找出病因，重點在探究過程。"},
-{q:"PjBL 的核心特徵是什麼？",opts:["沒有標準答案","有明確產出","純理論探討","個人獨立完成"],ans:1,exp:"PjBL 要求學習者交出看得見的成品——產品、報告、原型等。"},
-{q:"SDL 和 TBL 的最佳關係是？",opts:["二選一","TBL 取代 SDL","循環互補","彼此獨立"],ans:2,exp:"自主學習→帶進團隊碰撞→發現不足→回去自主學習→再驗證，形成增強循環。"},
-{q:"最強的學習設計是？",opts:["純 PBL","純 PjBL","PBL 啟動 + PjBL 落地","放棄兩者"],ans:2,exp:"用 PBL 的問題驅動啟動探究，再用 PjBL 的專案框架將探究結果轉化為具體產出。"},
-{q:"TBL 流程的第一步通常是？",opts:["團隊討論","個人測驗","老師講課","小組報告"],ans:1,exp:"TBL 以個人測驗開始，檢驗每個人課前 SDL 的品質，再進入團隊討論。"},
-{q:"SDL + TBL 循環的核心動力是？",opts:["考試壓力","認知衝突","老師要求","學分需求"],ans:1,exp:"團隊中不同觀點的碰撞產生認知衝突，逼你重新審視自己的理解，驅動更深的自主學習。"}
+{q:"SDL 在 TBL 中扮演什麼角色？",opts:["加速器","引擎","煞車","裝飾"],ans:"UFxOQRMUFRwXAQ==",exp:"SDL 是引擎——提供個人學習動力；TBL 是加速器——透過團隊碰撞放大學習效果。"},
+{q:"沒有 SDL 能力的人進入 TBL 會怎樣？",opts:["成為領導者","搭便車","自動學會","退出團隊"],ans:"UFxOQRMUFRwXAQ==",exp:"沒有自主學習基礎，在團隊中只能依賴他人，變成搭便車的乘客。"},
+{q:"PBL 最像哪種角色？",opts:["建築師","醫生","廚師","運動員"],ans:"UFxOQRMUFRwXAQ==",exp:"PBL 像醫生看診——面對複雜症狀，抽絲剝繭找出病因，重點在探究過程。"},
+{q:"PjBL 的核心特徵是什麼？",opts:["沒有標準答案","有明確產出","純理論探討","個人獨立完成"],ans:"UFxOQRMUFRwXAQ==",exp:"PjBL 要求學習者交出看得見的成品——產品、報告、原型等。"},
+{q:"SDL 和 TBL 的最佳關係是？",opts:["二選一","TBL 取代 SDL","循環互補","彼此獨立"],ans:"UFxOQRMUFRwXAg==",exp:"自主學習→帶進團隊碰撞→發現不足→回去自主學習→再驗證，形成增強循環。"},
+{q:"最強的學習設計是？",opts:["純 PBL","純 PjBL","PBL 啟動 + PjBL 落地","放棄兩者"],ans:"UFxOQRMUFRwXAg==",exp:"用 PBL 的問題驅動啟動探究，再用 PjBL 的專案架構將探究結果轉化為具體產出。"},
+{q:"TBL 流程的第一步通常是？",opts:["團隊討論","個人測驗","老師講課","小組報告"],ans:"UFxOQRMUFRwXAQ==",exp:"TBL 以個人測驗開始，檢驗每個人課前 SDL 的品質，再進入團隊討論。"},
+{q:"SDL + TBL 循環的核心動力是？",opts:["考試壓力","認知衝突","老師要求","學分需求"],ans:"UFxOQRMUFRwXAQ==",exp:"團隊中不同觀點的碰撞產生認知衝突，逼你重新審視自己的理解，驅動更深的自主學習。"}
 ],
 
 // M2
 m2_nav:"2. 教學場域與體驗",m2_title:"教學場域與生命體驗",
-m2_p1:"學習不只發生在方法論中，更發生在特定的場域裡。翻轉教室優化了課堂時間的使用方式，場域實習則把學習者直接送進真實世界。兩者是上下游的關係：翻轉是優化的準備階段，場域是不可替代的實戰階段。",
-m2_p2:"「Tell me and I forget, show me and I remember, involve me and I understand. 場域實習就是最徹底的 involve。」",
-m2_p3:"實習（Internship）垂直深化你在特定領域的專業能力，交換留學（Exchange Study）水平拓展你的世界觀與文化智商。理想的路徑是：先交換打開視野，再實習建立專業——交換給你鏡片，實習給你槓桿。",
+m2_p1:"學習不只發生在方法論中，更發生在特定的場域裡。翻轉教室把傳統「課堂講授＋回家練習」顛倒——課前透過影片教材自學，課堂做討論練習應用。本質是重新分配時間，把面對面留給高層次互動。傳統課堂最大浪費：老師花大量時間講學生自己能懂的東西，真正需要引導的高階思考被擠到課後。翻轉教室修正了這個錯位。",
+m2_p2:"「翻轉教室是優化的游泳池——先看教學影片到了泳池直接練習，教練旁邊即時指導。場域實習是把你丟進大海——海浪、水溫、暗流都是泳池沒有的變數。Tell me and I forget, show me and I remember, involve me and I understand。場域實習就是最徹底的 involve。」",
+m2_p3:"場域實習把學習者送進真實工作場域——醫院、學校、企業、社區——在實際情境中操作觀察反思。再好的課堂都是模擬，真實世界的複雜度、不確定性、人際互動、情緒壓力教室模擬不出。場域實習解決「知行落差」——把知道轉化為做到。翻轉和場域是上下游：翻轉是優化準備，場域是不可替代的實戰。",
+m2_p4:"實習垂直深化專業——在專業環境做真實工作，建立產業技能、發展人脈、測試職涯方向。你學到的不只是技能，更是對產業從內部觀察才看得見的運作邏輯：辦公室政治、客戶管理、有真實後果的截止日期，以及學術知識和職場執行之間的落差。交換留學水平拓展視野——在不同學術文化環境中，當所有習以為常的東西突然不管用（語言、食物、社會規範、幽默感），你被迫重建假設。這種認知重構是交換獨有的價值。",
+m2_p5:"理想路徑：先交換打開視野、建立適應力、磨利語言，然後實習運用國際經驗。交換給你鏡片（lens）看見更寬世界，實習給你槓桿（leverage）撬動職業機會。這整套場域體驗串起一條完整學習旅程：翻轉教室在方法論層面優化課堂效率；場域實習在實踐層面讓知識接受檢驗；實習在專業層面鍛造職業身份；交換在人生層面重構認知架構。它們不是各自獨立的，而是一條從教室到世界的成長路徑。",
 m2_cards:[
 {title:"翻轉教室",desc:"課前透過影片或教材自學知識，課堂時間拿來討論、練習、應用。本質是重新分配課堂時間，把面對面時間留給高層次互動。"},
 {title:"場域實習",desc:"直接進入真實工作現場——醫院、學校、企業、社區。在真實情境中操作、觀察、反思，讓知識接受現實檢驗。"},
@@ -146,21 +166,23 @@ m2_terms:[
 {front:"Vertical vs Horizontal",back:"實習垂直深化專業能力，交換水平拓展世界觀。兩者互補：交換給你鏡片（lens），實習給你槓桿（leverage）。"}
 ],
 m2_q:[
-{q:"翻轉教室的本質是什麼？",opts:["取消課堂","重新分配課堂時間","讓學生自學","減少老師工作"],ans:1,exp:"翻轉教室的核心是把寶貴的面對面時間從低層次的知識傳遞轉移到高層次的討論與應用。"},
-{q:"場域實習解決的核心問題是？",opts:["課堂效率","知行落差","考試壓力","教師負擔"],ans:1,exp:"再好的課堂都是模擬環境，場域實習讓學習者直接面對真實世界的複雜度，把「知道」轉化為「做到」。"},
-{q:"翻轉教室和場域實習的關係是？",opts:["互相取代","上下游關係","完全無關","二選一"],ans:1,exp:"翻轉教室是優化的準備階段，場域實習是不可替代的實戰階段，兩者是上下游關係。"},
-{q:"實習（Internship）的核心收穫是？",opts:["文化視野","專業身份與實務能力","語言能力","學術論文"],ans:1,exp:"實習讓你在真實專業環境中建立產業技能、發展人脈、測試職涯方向。"},
-{q:"交換留學的獨特價值在於？",opts:["學分轉換","重建假設與跨文化適應力","提高GPA","逃避壓力"],ans:1,exp:"當所有習以為常的事突然不管用，你被迫從頭重建假設，這種認知重構是交換的獨特價值。"},
-{q:"最理想的經歷順序是？",opts:["先實習後交換","先交換後實習","只做實習","只去交換"],ans:1,exp:"先交換打開視野和適應力，再實習時能運用國際經驗。交換給你鏡片，實習給你槓桿。"},
-{q:"場域實習可比擬為？",opts:["在游泳池練習","被丟進大海","在岸上看書","看游泳影片"],ans:1,exp:"游泳池（翻轉教室）可以優化練習，但大海（場域實習）有浪、暗流等真實變數。"},
-{q:"哪句話最能代表場域實習的精神？",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:2,exp:"Involve me and I understand——場域實習就是最徹底的 involve，在參與中真正理解。"}
+{q:"翻轉教室的本質是什麼？",opts:["取消課堂","重新分配課堂時間","讓學生自學","減少老師工作"],ans:"UFxOQRMUFRwXAQ==",exp:"翻轉教室的核心是把寶貴的面對面時間從低層次的知識傳遞轉移到高層次的討論與應用。"},
+{q:"場域實習解決的核心問題是？",opts:["課堂效率","知行落差","考試壓力","教師負擔"],ans:"UFxOQRMUFRwXAQ==",exp:"再好的課堂都是模擬環境，場域實習讓學習者直接面對真實世界的複雜度，把「知道」轉化為「做到」。"},
+{q:"翻轉教室和場域實習的關係是？",opts:["互相取代","上下游關係","完全無關","二選一"],ans:"UFxOQRMUFRwXAQ==",exp:"翻轉教室是優化的準備階段，場域實習是不可替代的實戰階段，兩者是上下游關係。"},
+{q:"實習（Internship）的核心收穫是？",opts:["文化視野","專業身份與實務能力","語言能力","學術論文"],ans:"UFxOQRMUFRwXAQ==",exp:"實習讓你在真實專業環境中建立產業技能、發展人脈、測試職涯方向。"},
+{q:"交換留學的獨特價值在於？",opts:["學分轉換","重建假設與跨文化適應力","提高GPA","逃避壓力"],ans:"UFxOQRMUFRwXAQ==",exp:"當所有習以為常的事突然不管用，你被迫從頭重建假設，這種認知重構是交換的獨特價值。"},
+{q:"最理想的經歷順序是？",opts:["先實習後交換","先交換後實習","只做實習","只去交換"],ans:"UFxOQRMUFRwXAQ==",exp:"先交換打開視野和適應力，再實習時能運用國際經驗。交換給你鏡片，實習給你槓桿。"},
+{q:"場域實習可比擬為？",opts:["在游泳池練習","被丟進大海","在岸上看書","看游泳影片"],ans:"UFxOQRMUFRwXAQ==",exp:"游泳池（翻轉教室）可以優化練習，但大海（場域實習）有浪、暗流等真實變數。"},
+{q:"哪句話最能代表場域實習的精神？",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:"UFxOQRMUFRwXAg==",exp:"Involve me and I understand——場域實習就是最徹底的 involve，在參與中真正理解。"}
 ],
 
 // M3
 m3_nav:"3. 教學與 AI 融入",m3_title:"教學責任與 AI 融入",
-m3_p1:"創新教學和把課教好教滿，哪個重要？很多所謂的創新教學，執行起來是花了三節課做分組活動，熱鬧非凡但基本概念一塌糊塗。這不是創新，是用形式取代內容。先求教好教滿，再求教得更巧。",
-m3_p2:"「創新的正確定位，是『教好』的升級版，不是替代品。一個老師如果課都教不滿、教不清楚，就急著去翻轉、去 PBL，那是在沙灘上蓋城堡。」",
-m3_p3:"傳統創新教學法（翻轉、PBL、TBL、PjBL）是教學的作業系統，提供學習設計的底層邏輯。AI 是新裝上的強大硬體，讓原本受限的教學設計有了全新可能。根不穩，翅膀只會讓你摔得更快；根扎得深，翅膀能帶你飛到從前到不了的地方。",
+m3_p1:"創新教學重要還是把課教好教滿重要？對大多數老師來說，把課教好教滿比追求創新教學重要得多。理由一：創新不等於有效——很多所謂創新教學花了三節課做分組活動，熱鬧非凡但回頭考試基本概念一塌糊塗，這是用形式取代內容。理由二：紮實教學本身就不簡單——把課講清楚有條理、讓不同程度學生都聽懂、評量精準到位——這些基本功做到極致本身就是高超專業。理由三：創新需要以紮實為前提——你得先知道什麼該教、教到什麼程度，才有資格談用不同方式去教。",
+m3_p2:"「創新的正確定位，是『教好』的升級版，不是替代品。一個老師如果課都教不滿、教不清楚，就急著去翻轉、去 PBL，那是在沙灘上蓋城堡。學生最需要的，永遠是一個講得清楚、教得扎實的老師，而不是方法很潮但內容撐不住的老師。先求教好教滿，再求教得更巧——這個順序不能顛倒。」",
+m3_p3:"傳統創新教學法（翻轉、PBL、TBL、PjBL、合作學習、差異化教學、鷹架理論等）是教學的「作業系統」——提供學習設計的底層邏輯：為什麼要問題驅動？為什麼先自學再討論？為什麼在真實情境中練習？這些原理來自幾十年認知科學和教育心理學研究，不會因為 AI 出現就失效。人腦建構知識的方式沒有因為 AI 而改變。",
+m3_p4:"AI 是新裝上的強大「硬體」——讓原本受限的教學設計有了全新可能。SDL + AI：AI 學伴讓自學有即時對話、追問、客製化解釋，不再只是看影片讀課本。TBL + AI：討論前先跟 AI 辯論觀點，帶更成熟想法進團隊，AI 當第三方觀點打破迷思。PBL + AI：快速蒐集資料、生成假設、模擬方案，時間留給高層次分析判斷。翻轉 + AI：課前 AI 即時答疑，課堂 AI 即時掌握每位學生理解狀況。",
+m3_p5:"但沒有教學法底層邏輯的 AI 融入會出大問題。不懂 PBL 設計原理就叫學生「去問 ChatGPT 然後交報告」，那不是 AI 融入，是把教學外包給 AI。不懂鷹架理論就無法判斷 AI 應該介入到什麼程度——用太多學生失去認知挑戰，用太少浪費工具潛力。傳統教學法是根，AI 是翅膀。根不穩，翅膀讓你摔更快；根扎深，翅膀帶你飛到從前到不了的地方。先教好再教巧，這個原則在 AI 時代不但沒過時，反而更加重要。",
 m3_cards:[
 {title:"SDL + AI",desc:"AI 學伴讓自主學習效率與深度大幅提升——隨時對話、追問、客製化解釋，不再只是看影片讀課本。"},
 {title:"TBL + AI",desc:"團隊討論前先跟 AI 辯論觀點，帶更成熟想法進團隊。AI 也能當第三方觀點提供者，打破團體迷思。"},
@@ -173,21 +195,23 @@ m3_terms:[
 {front:"根與翅膀",back:"傳統教學法是根，AI 是翅膀。沒有教學法底層邏輯的 AI 融入，只是把教學外包給 AI，不是真正的創新。"}
 ],
 m3_q:[
-{q:"創新教學的正確定位是？",opts:["取代傳統教學","教好教滿的升級版","純粹的形式變化","額外的負擔"],ans:1,exp:"創新是建立在紮實教學基礎上的升級，不是替代品。地基沒打好就蓋樓，蓋出來不會好用。"},
-{q:"沒有教學法底層邏輯的 AI 融入會變成？",opts:["真正的創新","把教學外包給 AI","差異化教學","翻轉教室"],ans:1,exp:"不懂 PBL 設計原理就叫學生去問 AI 交報告，學到的不是知識而是複製貼上。"},
-{q:"傳統創新教學法在比喻中被稱為？",opts:["翅膀","引擎","作業系統","硬體"],ans:2,exp:"傳統創新教學法是教學的作業系統，提供底層邏輯；AI 是新硬體，提供執行能力。"},
-{q:"AI 融入 TBL 的價值是？",opts:["取代團隊討論","當第三方觀點提供者","讓學生不用準備","減少互動"],ans:1,exp:"AI 能在團隊討論前幫個人磨利觀點，討論中提供第三方視角打破團體迷思。"},
-{q:"先求教好教滿的理由是？",opts:["創新不重要","紮實教學本身就是高超專業","學生不需要創新","行政要求"],ans:1,exp:"把課講清楚、讓不同程度學生都聽懂、評量精準到位——這些基本功做到極致就是高超專業。"},
-{q:"AI 融入 SDL 的關鍵突破是？",opts:["取代老師","隨時可對話追問的 AI 學伴","自動完成作業","不需要學習"],ans:1,exp:"AI 學伴讓自學不再只是被動看影片，而是有即時對話、追問、客製化解釋的互動體驗。"},
-{q:"在沙灘上蓋城堡比喻的是？",opts:["基礎扎實才創新","不需要基礎","創新最重要","放棄教學"],ans:0,exp:"課都教不好就急著搞創新教學法，就像在沙灘上蓋城堡——地基不穩，蓋了也會塌。"},
-{q:"根與翅膀的正確組合是？",opts:["只要翅膀","只要根","根扎深再長翅膀","都不需要"],ans:2,exp:"傳統教學法的根扎得深，AI 的翅膀才能帶你飛到從前到不了的地方。"}
+{q:"創新教學的正確定位是？",opts:["取代傳統教學","教好教滿的升級版","純粹的形式變化","額外的負擔"],ans:"UFxOQRMUFRwXAQ==",exp:"創新是建立在紮實教學基礎上的升級，不是替代品。地基沒打好就蓋樓，蓋出來不會好用。"},
+{q:"沒有教學法底層邏輯的 AI 融入會變成？",opts:["真正的創新","把教學外包給 AI","差異化教學","翻轉教室"],ans:"UFxOQRMUFRwXAQ==",exp:"不懂 PBL 設計原理就叫學生去問 AI 交報告，學到的不是知識而是複製貼上。"},
+{q:"傳統創新教學法在比喻中被稱為？",opts:["翅膀","引擎","作業系統","硬體"],ans:"UFxOQRMUFRwXAg==",exp:"傳統創新教學法是教學的作業系統，提供底層邏輯；AI 是新硬體，提供執行能力。"},
+{q:"AI 融入 TBL 的價值是？",opts:["取代團隊討論","當第三方觀點提供者","讓學生不用準備","減少互動"],ans:"UFxOQRMUFRwXAQ==",exp:"AI 能在團隊討論前幫個人磨利觀點，討論中提供第三方視角打破團體迷思。"},
+{q:"先求教好教滿的理由是？",opts:["創新不重要","紮實教學本身就是高超專業","學生不需要創新","行政要求"],ans:"UFxOQRMUFRwXAQ==",exp:"把課講清楚、讓不同程度學生都聽懂、評量精準到位——這些基本功做到極致就是高超專業。"},
+{q:"AI 融入 SDL 的關鍵突破是？",opts:["取代老師","隨時可對話追問的 AI 學伴","自動完成作業","不需要學習"],ans:"UFxOQRMUFRwXAQ==",exp:"AI 學伴讓自學不再只是被動看影片，而是有即時對話、追問、客製化解釋的互動體驗。"},
+{q:"在沙灘上蓋城堡比喻的是？",opts:["基礎扎實才創新","不需要基礎","創新最重要","放棄教學"],ans:"UFxOQRMUFRwXAA==",exp:"課都教不好就急著搞創新教學法，就像在沙灘上蓋城堡——地基不穩，蓋了也會塌。"},
+{q:"根與翅膀的正確組合是？",opts:["只要翅膀","只要根","根扎深再長翅膀","都不需要"],ans:"UFxOQRMUFRwXAg==",exp:"傳統教學法的根扎得深，AI 的翅膀才能帶你飛到從前到不了的地方。"}
 ],
 
 // M4
 m4_nav:"4. 校園的未來",m4_title:"校園與教室的未來",
-m4_p1:"當 AI 融入 EML 後，EMI 從「必需品」變成「奢侈品」。過去 EMI 是實現 EML 的唯一管道，AI 打開了其他管道——學生透過 AI 自主建構英語學習環境，不再完全依賴老師的英語授課。該把力氣花在確保每個學生都能 EML，而不是要求每個老師都能 EMI。",
-m4_p2:"「教室不會消失，但它從『學習的主場』降級為『學習生態系中的一個節點』——出場頻率降低，但每次出場的份量加重。」",
-m4_p3:"用 PBL 驅動、PjBL 產出，AI 融入 SDL 加線上 TBL，接軌場域實習——這套系統組裝完成後，校園從「教育的預設容器」變成「教育的選配模組」。校園體驗成為一個可選擇的附加層，不再是必經之路。教育的未來不是「有校園」或「沒校園」，而是「不再預設每個人都需要校園」。",
+m4_p1:"EMI（English as a Medium of Instruction）是老師用英語教學科內容，EML（English as a Medium of Learning）把視角翻轉到學生端——學習者如何透過英語建構知識。EMI 只關注「老師用英語教」，容易落入陷阱——老師講了英語但學生沒學進去。EML 把焦點放回學習者：學生真的透過英語在學習嗎？EMI 是手段，EML 是目的。沒有 EML 意識的 EMI，是老師自己講英文的獨角戲。最理想是以 EML 為導向設計 EMI 課堂。",
+m4_p2:"「當 AI 融入 EML 後，EMI 從『必需品』變成『奢侈品』。AI 打開了實現 EML 的其他管道——學生透過 AI 自主建構英語學習環境，不再完全依賴老師英語授課。該把力氣花在確保每個學生都能 EML（用 AI 大幅降低門檻），而不是要求每個老師都能 EMI（勉強用英語教反而犧牲學科深度）。高品質 EMI 依然是頂級學習體驗，但不再是每間教室都必須勉強複製的標配。」",
+m4_p3:"用 PBL 驅動、PjBL 產出，AI 融入 SDL 加線上 TBL，接軌場域實習——這套系統組裝後，教室傳統功能被逐一替代。但教室有一個功能是系統裡唯一的結構性空缺：「儀式性的共在」。身體共處創造的學習張力線上無法複製——你坐在對面看見對方皺眉那一秒的認知衝突、一個眼神一個嘆氣一個沉默，這些微訊號在線上被壓縮到幾乎消失，但恰恰是深度學習對話中最關鍵的觸發器。",
+m4_p4:"教室應該變成三件事：一、高密度碰撞的競技場——學習者帶著各自 SDL 和 AI 探索的成果來過招，不是聽老師講。每次離開教室你的認知結構應該被重組。二、關係與信任的培養皿——跟見過面一起吃過飯的人線上討論深度完全不同。三、反思與意義建構的聖殿——在高速運轉的循環中定期停下來問：我們到底學到了什麼？這對我們意味著什麼？教室從「學習的主場」降級為「學習生態系的節點」——出場頻率降低，每次份量加重。",
+m4_p5:"校園從「教育的預設容器」變成「教育的選配模組」。Agentic AI + 線上學習 + 場域實踐構成基礎架構。校園體驗變成可選擇的附加層——為需要通過儀式、社群歸屬、身份轉化的學習者服務。有些人選完整校園體驗（十八歲離開家、跟陌生人共同生活、經歷第一次獨立），有些人選純線上加場域路徑。兩條路通向同樣被認證的學習成果。教育的未來不是「有校園」或「沒校園」，而是「不再預設每個人都需要校園」。校園可能一學期只見面六次，但每一次都是不可取代的高峰體驗。",
 m4_cards:[
 {title:"EMI → EML 的翻轉",desc:"EMI 是手段（老師用英語教），EML 是目的（學生用英語學）。AI 讓 EML 不再完全依賴 EMI。"},
 {title:"教室的三個新功能",desc:"高密度碰撞的競技場、關係與信任的培養皿、反思與意義建構的聖殿。出場頻率降低，份量加重。"},
@@ -200,21 +224,24 @@ m4_terms:[
 {front:"儀式性共在",back:"Ritual Co-presence：身體共處創造的學習張力、社群歸屬、集體反思——線上無法完全複製的存在性體驗。"}
 ],
 m4_q:[
-{q:"AI 融入 EML 後，EMI 變成什麼？",opts:["更重要","從必需品變奢侈品","完全消失","不受影響"],ans:1,exp:"AI 讓學生能自主建構英語學習環境，EMI 不再是實現 EML 的唯一管道。"},
-{q:"教室在未來教育生態中的角色是？",opts:["學習的主場","學習生態系的節點","完全消失","不變"],ans:1,exp:"教室從主場降為節點，出場頻率降低但份量加重——碰撞、歸屬、反思三大功能。"},
-{q:"教室的「儀式性共在」指的是？",opts:["上課點名","身體共處創造的社群認同","考試制度","畢業典禮"],ans:1,exp:"一群人在同一物理空間的共同經歷、眼神、沉默、微表情——這些線上無法複製的互動。"},
-{q:"校園變成「選配模組」意味著？",opts:["所有人都不需要校園","校園不再是所有人的必經之路","校園更重要了","沒有變化"],ans:1,exp:"有些人選完整校園體驗，有些人選線上+場域路徑。兩條路通向同樣被認證的成果。"},
-{q:"未來教育的基礎架構是？",opts:["傳統校園","Agentic AI + 線上學習 + 場域實踐","只有教室","只有實習"],ans:1,exp:"去中心化的系統成為基礎架構，校園體驗變成附加層。"},
-{q:"EMI 仍有價值的面向是？",opts:["知識傳遞","真人英語學術示範與身份認同模型","考試需要","行政規定"],ans:1,exp:"教授用英語即時推導、回應提問的活生生示範，帶給學生學術身份認同的模型效果。"},
-{q:"把力氣花在哪裡更有效？",opts:["要求每個老師 EMI","確保每個學生能 EML","取消英語教學","只用中文教學"],ans:1,exp:"讓每個學生都能透過AI等多元管道用英語學習，比勉強每個老師用英語教更有效且公平。"},
-{q:"教室一學期可能只見面幾次，但每次是？",opts:["例行公事","不可取代的高峰體驗","純粹社交","行政需要"],ans:1,exp:"每次實體聚會都是高密度碰撞、建立信任、集體反思的高峰體驗。"}
+{q:"AI 融入 EML 後，EMI 變成什麼？",opts:["更重要","從必需品變奢侈品","完全消失","不受影響"],ans:"UFxOQRMUFRwXAQ==",exp:"AI 讓學生能自主建構英語學習環境，EMI 不再是實現 EML 的唯一管道。"},
+{q:"教室在未來教育生態中的角色是？",opts:["學習的主場","學習生態系的節點","完全消失","不變"],ans:"UFxOQRMUFRwXAQ==",exp:"教室從主場降為節點，出場頻率降低但份量加重——碰撞、歸屬、反思三大功能。"},
+{q:"教室的「儀式性共在」指的是？",opts:["上課點名","身體共處創造的社群認同","考試制度","畢業典禮"],ans:"UFxOQRMUFRwXAQ==",exp:"一群人在同一物理空間的共同經歷、眼神、沉默、微表情——這些線上無法複製的互動。"},
+{q:"校園變成「選配模組」意味著？",opts:["所有人都不需要校園","校園不再是所有人的必經之路","校園更重要了","沒有變化"],ans:"UFxOQRMUFRwXAQ==",exp:"有些人選完整校園體驗，有些人選線上+場域路徑。兩條路通向同樣被認證的成果。"},
+{q:"未來教育的基礎架構是？",opts:["傳統校園","Agentic AI + 線上學習 + 場域實踐","只有教室","只有實習"],ans:"UFxOQRMUFRwXAQ==",exp:"去中心化的系統成為基礎架構，校園體驗變成附加層。"},
+{q:"EMI 仍有價值的面向是？",opts:["知識傳遞","真人英語學術示範與身份認同模型","考試需要","行政規定"],ans:"UFxOQRMUFRwXAQ==",exp:"教授用英語即時推導、回應提問的活生生示範，帶給學生學術身份認同的模型效果。"},
+{q:"把力氣花在哪裡更有效？",opts:["要求每個老師 EMI","確保每個學生能 EML","取消英語教學","只用中文教學"],ans:"UFxOQRMUFRwXAQ==",exp:"讓每個學生都能透過AI等多元管道用英語學習，比勉強每個老師用英語教更有效且公平。"},
+{q:"教室一學期可能只見面幾次，但每次是？",opts:["例行公事","不可取代的高峰體驗","純粹社交","行政需要"],ans:"UFxOQRMUFRwXAQ==",exp:"每次實體聚會都是高密度碰撞、建立信任、集體反思的高峰體驗。"}
 ],
 
 // M5
 m5_nav:"5. 教授與年輕人",m5_title:"大學教授與年輕人的希望",
-m5_p1:"大學教授的三重角色——教學者、研究者、導師——在 AI 時代面臨全面解構。教學被 AI 做得更好更有耐心；Agentic AI 能自動完成從問題發掘到論文刊登的全研究流程，且難以被偵測；Physical AI 的出現更讓導師角色的最後防線也被突破。",
-m5_p2:"「能做出不被 AI 取代之研究的教授有 1% 嗎？當 Agentic AI 滿足學術遊戲規則的所有要求，教授的研究動機本身會崩塌——不是因為他們不好，是因為制度的誘因結構讓『自己做研究』變成不理性的選擇。」",
-m5_p3:"但教授時代的落幕不是年輕人的末日，而是破曉。年輕人是第一代 AI 原住民，沒有舊習慣要改、沒有舊身份要放下。真正的希望在於：一個會問問題的人，在任何時代都有希望，而在 AI 時代，這種人的槓桿被放大了一千倍。",
+m5_p1:"大學教授的三重角色——教學者、研究者、導師——在 AI 時代面臨全面解構。教學者角色最先被取代：AI 在知識傳遞上更有耐心、更能客製化、24 小時在線、能即時調整難度、用學生最能理解的方式重新解釋五十次不會不耐煩。過去教授的稀缺性在於他是學生能接觸到的少數精通該領域的人，但當 AI 能以接近專家水準回答任何領域問題，這種稀缺性就被稀釋了。一位普通教授照本宣科的講課，邊際價值已趨近於零。",
+m5_p2:"「Agentic AI 能自動完成從問題發掘、文獻回顧、假說生成、研究設計、數據蒐集分析、論文撰寫、投稿應對到被接受刊登的全流程——而且根本查不出來。Agent 分階段工作，留下看起來像人類思考過程的痕跡——email 往來、文獻紀錄、數據檔案、修改歷程——全部掛在教授名下。從外部觀察，這跟教授親自做的研究完全一樣。能做出不被 AI 取代之研究的教授有 1% 嗎？我懷疑。」",
+m5_p3:"學術界大量研究是增量式填坑工作——在既有架構裡微調變項、換樣本、複製研究。AI 不但能做，做得更有效率。真正重要的突破是「掀桌子」——質疑架構本身，但這樣的教授可能遠低於 1%。更致命的是：當 Agentic AI 滿足學術遊戲規則的所有要求，教授的研究動機會崩塌——不是因為他們不好，是因為制度誘因讓「自己做研究」變成不理性選擇。Publish or perish 壓力下，能外包的苦差事為什麼要自己扛？",
+m5_p4:"大學教授根本沒有諮商輔導的專業訓練與能力。做研究求發表加上教學行政負擔，期待他們擔任比 AI Agent 更有觀察力、同理心、問題解決能力的導師？緣木求魚。更何況有 Physical AI——有實體存在的 AI 機器人，能感知你的表情肢體語言、能在你哭的時候遞上紙巾、受過所有心理諮商流派訓練、24 小時可用、記住你每一句話和每次情緒波動。一個始終在場、永遠不累、專業頂尖的 Physical AI 導師，對上一個忙著趕論文、一個月見你十五分鐘、沒受過諮商訓練的真人教授——多數學生會選誰？Physical AI 還解決規模化問題：每個學生都有專屬頂級導師，這是教育公平的根本性躍進。",
+m5_p5:"學術體制面臨三條演化路徑。路徑一（全面崩塌）：所有人偷偷用 Agent，論文暴增但沒人在思考，同儕審查變成 AI 寫的論文被 AI 審查再被 AI 刊登——機器寫給機器看。路徑二（重新定義）：承認 AI 能做研究，把人類價值定義為提出 AI 想不到的問題和承擔倫理責任。路徑三（改變規則）：放棄偵測，徹底改變學術評價體系——不再以論文評價人，而是以 AI 無法代勞的方式衡量貢獻。判斷是路徑一先發生，逼出路徑三。「發表論文」會失去能力信號功能——如果每個人都能買假名牌包，名牌包就不再是身份象徵。",
+m5_p6:"但教授時代落幕不是年輕人的末日，而是破曉。教授的困境是「既有價值被掏空」——護城河被 AI 削平。大學生的處境完全相反：「從零開始，起跑線前所未有地公平」。年輕人是第一代 AI 原住民，不需要「適應」AI。過去做獨立研究需要四年大學加三到五年研究所再熬資歷，現在一個有好奇心、有好問題、會使用 AI 的二十歲年輕人今天就可以開始。真正的希望在三個面向：一、你們是第一代 AI 原住民，沒有舊遊戲的肌肉記憶拖後腿。二、AI 取代的是可系統化能力，而好奇心、跨域直覺、意義渴望、行動勇氣——二十歲的人比五十歲的人通常擁有更多。三、一個會問問題的人在任何時代都有希望，AI 時代這種人的槓桿被放大一千倍。",
 m5_cards:[
 {title:"研究者角色的瓦解",desc:"Agentic AI 全自動研究流水線——從文獻回顧到投稿刊登——且不可偵測。學術誠信體制的根基正在瓦解。"},
 {title:"導師角色的突破",desc:"Physical AI 提供實體在場、無限耐心、專業諮商能力。功能層面上可能超越多數缺乏諮商訓練的教授。"},
@@ -227,14 +254,14 @@ m5_terms:[
 {front:"AI 原住民",back:"第一代在 AI 環境中成長的年輕人。不需要「適應」AI，AI 是原生工具。核心優勢：好奇心、跨域直覺、意義渴望、行動勇氣。"}
 ],
 m5_q:[
-{q:"教授的哪個角色最先被 AI 取代？",opts:["研究者","教學者","導師","行政"],ans:1,exp:"AI 在知識傳遞上更有耐心、更能客製化、24小時在線——教學者角色最先被取代。"},
-{q:"Agentic AI 研究流水線為什麼難以偵測？",opts:["AI 會承認","留下明顯痕跡","全程模擬人類研究行為","只能寫短論文"],ans:2,exp:"Agent 分階段工作，留下看起來像人類思考過程的數位足跡，統計特徵與人類無異。"},
-{q:"當 AI 滿足學術遊戲規則，教授的研究動機會？",opts:["更強","崩塌","不變","轉向教學"],ans:1,exp:"制度誘因讓「自己做研究」變成不理性選擇。能外包的苦差事，為什麼要自己扛？"},
-{q:"Physical AI 在導師角色上的結構性優勢是？",opts:["有學位","規模化的高品質陪伴","有論文","有行政權力"],ans:1,exp:"每個學生都能擁有專屬的、頂級品質的 Physical AI 導師，這是教育公平的根本性躍進。"},
-{q:"學術體制最可能的演化路徑是？",opts:["維持現狀","路徑一（崩塌）先發生，逼出路徑三","直接路徑二","回到傳統"],ans:1,exp:"短期全面灰色地帶，集體虛偽自我瓦解後，被迫尋找 AI 無法偽造的評價標準。"},
-{q:"年輕人的核心優勢是？",opts:["學歷","沒有舊包袱的 AI 原住民","教授保護","制度保障"],ans:1,exp:"沒有舊習慣要改、沒有舊身份要放下，是第一代有機會從二十歲就用 AI 做過去需要整個團隊才能做的事。"},
-{q:"在 AI 時代最有價值的能力組合是？",opts:["背誦能力","自主發問 × 系統追問 × AI 協作","考試技巧","服從指令"],ans:1,exp:"會問問題的人在任何時代都有希望，AI 時代這種人的槓桿被放大一千倍。"},
-{q:"教授時代的落幕對年輕人意味著？",opts:["末日","破曉","無影響","更需要教授"],ans:1,exp:"舊的知識壟斷被打破，年輕人和資深者站在幾乎相同的起跑線上，甚至跑得更快。"}
+{q:"教授的哪個角色最先被 AI 取代？",opts:["研究者","教學者","導師","行政"],ans:"UFxOQRMUFRwXAQ==",exp:"AI 在知識傳遞上更有耐心、更能客製化、24小時在線——教學者角色最先被取代。"},
+{q:"Agentic AI 研究流水線為什麼難以偵測？",opts:["AI 會承認","留下明顯痕跡","全程模擬人類研究行為","只能寫短論文"],ans:"UFxOQRMUFRwXAg==",exp:"Agent 分階段工作，留下看起來像人類思考過程的數位足跡，統計特徵與人類無異。"},
+{q:"當 AI 滿足學術遊戲規則，教授的研究動機會？",opts:["更強","崩塌","不變","轉向教學"],ans:"UFxOQRMUFRwXAQ==",exp:"制度誘因讓「自己做研究」變成不理性選擇。能外包的苦差事，為什麼要自己扛？"},
+{q:"Physical AI 在導師角色上的結構性優勢是？",opts:["有學位","規模化的高品質陪伴","有論文","有行政權力"],ans:"UFxOQRMUFRwXAQ==",exp:"每個學生都能擁有專屬的、頂級品質的 Physical AI 導師，這是教育公平的根本性躍進。"},
+{q:"學術體制最可能的演化路徑是？",opts:["維持現狀","路徑一（崩塌）先發生，逼出路徑三","直接路徑二","回到傳統"],ans:"UFxOQRMUFRwXAQ==",exp:"短期全面灰色地帶，集體虛偽自我瓦解後，被迫尋找 AI 無法偽造的評價標準。"},
+{q:"年輕人的核心優勢是？",opts:["學歷","沒有舊包袱的 AI 原住民","教授保護","制度保障"],ans:"UFxOQRMUFRwXAQ==",exp:"沒有舊習慣要改、沒有舊身份要放下，是第一代有機會從二十歲就用 AI 做過去需要整個團隊才能做的事。"},
+{q:"在 AI 時代最有價值的能力組合是？",opts:["背誦能力","自主發問 × 系統追問 × AI 協作","考試技巧","服從指令"],ans:"UFxOQRMUFRwXAQ==",exp:"會問問題的人在任何時代都有希望，AI 時代這種人的槓桿被放大一千倍。"},
+{q:"教授時代的落幕對年輕人意味著？",opts:["末日","破曉","無影響","更需要教授"],ans:"UFxOQRMUFRwXAQ==",exp:"舊的知識壟斷被打破，年輕人和資深者站在幾乎相同的起跑線上，甚至跑得更快。"}
 ],
 
 // M6
@@ -255,7 +282,7 @@ brand:"EDU",
 title:"Deconstructing Education in the AI Era",subtitle:"A Socratic inquiry from learning methods to campus obsolescence",
 nav_modules:"Module Directory",nav_prev:"Previous",nav_next:"Next",
 key_terms:"Key Terms",flip_prompt:"Click to flip",audio_read:"Audio Guide",
-quiz_title:"Module Quiz (Random 4 Questions)",
+quiz_title_fn:(picked,total,mastered)=>`Module Quiz (${picked} of ${total}, ${mastered} mastered)`,quiz_all_mastered:"Congratulations! All questions mastered 🎉",quiz_title:"Module Quiz",
 submit:"Submit",retry:"Retry",
 score:"Score",correct:"Correct",incorrect:"Incorrect",explanation:"Explanation",
 
@@ -265,6 +292,7 @@ analytics_id:"Student ID",analytics_id_ph:"e.g., 112212099",
 analytics_name:"Name",analytics_name_ph:"e.g., Jimmy Lo",
 analytics_export_csv:"Export CSV Record",
 analytics_fill_required:"Please fill in all fields to unlock export",
+analytics_save_local:"Save to Local Storage",analytics_saved:"Saved!",analytics_loaded:"History loaded",analytics_no_saved:"No saved data",
 group_options:["G1","G2","G3","G4","G5","G6","Others"],
 analytics_total_time:"Total Learning Time",analytics_total_clicks:"Total Interactions",
 analytics_overall_acc:"Overall Quiz Accuracy",
@@ -291,9 +319,11 @@ m0_stats:[
 m0_start:"Start Learning →",
 
 m1_nav:"1. Learning Methods",m1_title:"The Learning Methods Showdown",
-m1_p1:"Education begins with an ancient question: 'Do you want me to give you a fish, or teach you to fish?' This leads to four key comparisons in learning methodology — SDL vs TBL, PBL vs PjBL. None are either-or choices; they form a mutually reinforcing dynamic system.",
-m1_p2:"\"SDL is the engine, TBL is the accelerator. Someone without SDL capacity entering TBL becomes a free rider. Conversely, SDL without TBL easily falls into the echo chamber of cognitive blind spots.\"",
-m1_p3:"PBL is like a doctor diagnosing — unraveling complex symptoms to find root causes. PjBL is like an architect building — designing and constructing a tangible deliverable. The strongest learning design ignites inquiry through PBL, then grounds it through PjBL.",
+m1_p1:"Education begins with an ancient question: 'Do you want me to give you a fish, or teach you to fish?' Give someone a fish and they eat for a day; teach them to fish and they eat for a lifetime. In the AI era, the answer goes further — AI gives you a fish while teaching you to fish, even redesigning the fishing system. This leads to four key comparisons: SDL vs TBL, PBL vs PjBL — not either-or, but understanding each role to combine into a dynamic learning system.",
+m1_p2:"\"SDL is the engine, TBL is the accelerator. Someone without SDL entering TBL becomes a free rider — relying on others, copying answers, appearing to participate but learning nothing. Conversely, SDL alone easily falls into the echo chamber of cognitive blind spots — you think you understand, but you're spinning in your own framework. The team's value: exposing your blind spots when perspectives clash.\"",
+m1_p3:"PBL (Problem-Based Learning) is like a doctor diagnosing — methodically finding root causes through complex symptoms. Originating in medical education, the process IS the learning. PjBL (Project-Based Learning) is like an architect building — delivering a tangible structure, learning through construction. The strongest design ignites inquiry through PBL (real problems spark motivation), then grounds it through PjBL (transforming inquiry into concrete deliverables).",
+m1_p4:"SDL and TBL form a reinforcing cycle: self-study → team collision → discover gaps → more self-study → team validation. Faster cycle = deeper learning. TBL's first step is an individual quiz testing SDL quality — SDL is TBL's prerequisite. Strong SDL means growth even without a team; no SDL in the best team means just filling a seat.",
+m1_p5:"Is using AI more important than building AI apps? For most people, using matters far more. Not everyone needs to be an AI engineer, but nearly everyone will collaborate with AI. The boundary between building and using is blurring. The core competency is questioning and judgment. The pragmatic path: master using first, then naturally want to build. Using is the foundation; building creates a multiplier effect — solving not just your own problems but building solutions for many.",
 m1_cards:[
 {title:"SDL: Self-Directed Learning",desc:"Learners set their own goals, plan pathways, find resources, monitor progress, and reflect. The core is personal learning sovereignty."},
 {title:"TBL: Team-Based Learning",desc:"Deepen understanding through teamwork: pre-class preparation → individual test → team test → application. The core is knowledge construction through social collision."},
@@ -306,20 +336,22 @@ m1_terms:[
 {front:"PBL vs PjBL",back:"Problem-Based vs Project-Based: PBL focuses on inquiry (like diagnosis), PjBL on deliverables (like construction). Best design combines both."}
 ],
 m1_q:[
-{q:"What role does SDL play in TBL?",opts:["Accelerator","Engine","Brake","Decoration"],ans:1,exp:"SDL is the engine providing individual learning drive; TBL is the accelerator amplifying learning through team collision."},
-{q:"What happens to someone without SDL capacity in TBL?",opts:["Becomes a leader","Becomes a free rider","Automatically learns","Drops out"],ans:1,exp:"Without self-directed learning foundations, one can only rely on others in the team, becoming a free rider."},
-{q:"PBL is most like which role?",opts:["Architect","Doctor","Chef","Athlete"],ans:1,exp:"PBL is like a doctor diagnosing — facing complex symptoms, methodically finding root causes, focusing on the inquiry process."},
-{q:"What is the core feature of PjBL?",opts:["No standard answers","Clear deliverables","Pure theory","Individual work only"],ans:1,exp:"PjBL requires learners to produce tangible outputs — products, reports, prototypes, etc."},
-{q:"What is the optimal SDL-TBL relationship?",opts:["Either-or","TBL replaces SDL","Complementary cycle","Completely independent"],ans:2,exp:"Self-study → team collision → discover gaps → more self-study → team validation — a reinforcing cycle."},
-{q:"What is the strongest learning design?",opts:["Pure PBL","Pure PjBL","PBL ignition + PjBL grounding","Abandon both"],ans:2,exp:"Use PBL's problem-driven approach to ignite inquiry, then PjBL's project framework to ground results into concrete outputs."},
-{q:"What is typically the first step in TBL?",opts:["Team discussion","Individual quiz","Lecture","Group presentation"],ans:1,exp:"TBL begins with individual quizzes to verify each person's pre-class SDL quality before team discussion."},
-{q:"What drives the SDL + TBL cycle?",opts:["Exam pressure","Cognitive conflict","Teacher demands","Credit requirements"],ans:1,exp:"Clashing perspectives in teams create cognitive conflict, forcing you to re-examine understanding and driving deeper self-study."}
+{q:"What role does SDL play in TBL?",opts:["Accelerator","Engine","Brake","Decoration"],ans:"UFxOQRMUFRwXAQ==",exp:"SDL is the engine providing individual learning drive; TBL is the accelerator amplifying learning through team collision."},
+{q:"What happens to someone without SDL capacity in TBL?",opts:["Becomes a leader","Becomes a free rider","Automatically learns","Drops out"],ans:"UFxOQRMUFRwXAQ==",exp:"Without self-directed learning foundations, one can only rely on others in the team, becoming a free rider."},
+{q:"PBL is most like which role?",opts:["Architect","Doctor","Chef","Athlete"],ans:"UFxOQRMUFRwXAQ==",exp:"PBL is like a doctor diagnosing — facing complex symptoms, methodically finding root causes, focusing on the inquiry process."},
+{q:"What is the core feature of PjBL?",opts:["No standard answers","Clear deliverables","Pure theory","Individual work only"],ans:"UFxOQRMUFRwXAQ==",exp:"PjBL requires learners to produce tangible outputs — products, reports, prototypes, etc."},
+{q:"What is the optimal SDL-TBL relationship?",opts:["Either-or","TBL replaces SDL","Complementary cycle","Completely independent"],ans:"UFxOQRMUFRwXAg==",exp:"Self-study → team collision → discover gaps → more self-study → team validation — a reinforcing cycle."},
+{q:"What is the strongest learning design?",opts:["Pure PBL","Pure PjBL","PBL ignition + PjBL grounding","Abandon both"],ans:"UFxOQRMUFRwXAg==",exp:"Use PBL's problem-driven approach to ignite inquiry, then PjBL's project framework to ground results into concrete outputs."},
+{q:"What is typically the first step in TBL?",opts:["Team discussion","Individual quiz","Lecture","Group presentation"],ans:"UFxOQRMUFRwXAQ==",exp:"TBL begins with individual quizzes to verify each person's pre-class SDL quality before team discussion."},
+{q:"What drives the SDL + TBL cycle?",opts:["Exam pressure","Cognitive conflict","Teacher demands","Credit requirements"],ans:"UFxOQRMUFRwXAQ==",exp:"Clashing perspectives in teams create cognitive conflict, forcing you to re-examine understanding and driving deeper self-study."}
 ],
 
 m2_nav:"2. Venues & Experiences",m2_title:"Teaching Venues & Life Experiences",
-m2_p1:"Learning doesn't just happen through methods — it happens in specific venues. Flipped classrooms optimize how class time is used, while field practicum places learners directly into the real world. They form an upstream-downstream relationship: flipping is optimized preparation; fieldwork is irreplaceable real combat.",
-m2_p2:"\"Tell me and I forget, show me and I remember, involve me and I understand. Field practicum is the most thorough form of involvement.\"",
-m2_p3:"Internships deepen your professional competence vertically in a specific field, while exchange study broadens your worldview and cultural intelligence horizontally. The ideal path: exchange first to open perspectives, then internship to build leverage — exchange gives you the lens, internship gives you the leverage.",
+m2_p1:"Learning happens in specific venues. The Flipped Classroom reverses traditional 'lecture + homework' — students self-study beforehand, class time is for discussion, practice, application. The essence: redistributing time for higher-order interaction. Traditional classrooms' biggest waste: teachers lecture what students could learn independently while higher-order thinking needing guidance gets squeezed to homework.",
+m2_p2:"\"The flipped classroom optimizes a swimming pool — watch tutorial videos first, then practice with coach giving real-time guidance. Field practicum throws you into the ocean — waves, currents, temperature are variables the pool can't simulate. Tell me and I forget, show me and I remember, involve me and I understand. Field practicum is the most thorough involvement.\"",
+m2_p3:"Field Practicum places learners in real work environments — hospitals, schools, companies, communities. No classroom, however flipped, can simulate real-world complexity, uncertainty, interpersonal dynamics, and emotional pressure. It solves the knowing-doing gap — transforming 'knowing' into 'doing.' Flipped and field are upstream-downstream: flipping is optimized preparation; fieldwork is irreplaceable combat.",
+m2_p4:"Internships vertically deepen expertise — building industry skills, networks, testing career fit. You learn not just skills but an industry's internal logic: office politics, client management, deadlines with real consequences. Exchange study horizontally broadens worldview — when everything familiar stops working (language, food, norms, humor), you rebuild assumptions from scratch. This cognitive restructuring stays for life.",
+m2_p5:"Ideal path: exchange first to open perspectives, build adaptability, sharpen language; then internship leveraging international experience. Exchange gives you the lens to see a broader world; internship gives leverage for career opportunities. This spectrum forms a complete journey: flipped classroom optimizes learning efficiency; field practicum tests knowledge against reality; internship forges professional identity; exchange restructures cognitive frameworks — a growth path from classroom to world.",
 m2_cards:[
 {title:"Flipped Classroom",desc:"Self-study content before class through videos/materials; class time is for discussion, practice, and application. Essentially redistributing class time for higher-order interaction."},
 {title:"Field Practicum",desc:"Enter real work environments — hospitals, schools, companies, communities. Operate, observe, and reflect in authentic contexts where knowledge meets reality."},
@@ -332,20 +364,22 @@ m2_terms:[
 {front:"Vertical vs Horizontal",back:"Internships deepen expertise vertically; exchange broadens worldview horizontally. Complementary: exchange = lens, internship = leverage."}
 ],
 m2_q:[
-{q:"What is the essence of the flipped classroom?",opts:["Eliminate classes","Redistribute class time","Let students self-study only","Reduce teacher workload"],ans:1,exp:"The core of flipping is shifting precious face-to-face time from low-level knowledge delivery to high-level discussion and application."},
-{q:"What core problem does field practicum solve?",opts:["Class efficiency","The knowing-doing gap","Exam pressure","Teacher burden"],ans:1,exp:"No matter how good the classroom, it's simulated. Field practicum lets learners face real-world complexity, converting 'knowing' to 'doing.'"},
-{q:"What is the relationship between flipped classroom and field practicum?",opts:["They replace each other","Upstream-downstream","Completely unrelated","Either-or"],ans:1,exp:"Flipped classroom is optimized preparation; field practicum is irreplaceable real combat — upstream and downstream."},
-{q:"What is the core gain of internship?",opts:["Cultural perspective","Professional identity & practical competence","Language skills","Academic papers"],ans:1,exp:"Internship builds industry skills, networks, and career direction testing in real professional environments."},
-{q:"What is the unique value of exchange study?",opts:["Credit transfer","Rebuilding assumptions & cross-cultural adaptability","Higher GPA","Escaping pressure"],ans:1,exp:"When everything familiar suddenly doesn't work, you're forced to rebuild assumptions from scratch — exchange's unique cognitive restructuring."},
-{q:"What is the ideal sequence of experiences?",opts:["Internship then exchange","Exchange then internship","Internship only","Exchange only"],ans:1,exp:"Exchange first opens perspectives and adaptability; then internship leverages that international experience. Lens first, leverage second."},
-{q:"Field practicum can be compared to?",opts:["Practicing in a pool","Being thrown into the ocean","Reading on shore","Watching swimming videos"],ans:1,exp:"The pool (flipped classroom) optimizes practice, but the ocean (field practicum) has waves, currents, and real-world variables."},
-{q:"Which quote best represents field practicum?",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:2,exp:"'Involve me and I understand' — field practicum is the most thorough involvement, understanding through participation."}
+{q:"What is the essence of the flipped classroom?",opts:["Eliminate classes","Redistribute class time","Let students self-study only","Reduce teacher workload"],ans:"UFxOQRMUFRwXAQ==",exp:"The core of flipping is shifting precious face-to-face time from low-level knowledge delivery to high-level discussion and application."},
+{q:"What core problem does field practicum solve?",opts:["Class efficiency","The knowing-doing gap","Exam pressure","Teacher burden"],ans:"UFxOQRMUFRwXAQ==",exp:"No matter how good the classroom, it's simulated. Field practicum lets learners face real-world complexity, converting 'knowing' to 'doing.'"},
+{q:"What is the relationship between flipped classroom and field practicum?",opts:["They replace each other","Upstream-downstream","Completely unrelated","Either-or"],ans:"UFxOQRMUFRwXAQ==",exp:"Flipped classroom is optimized preparation; field practicum is irreplaceable real combat — upstream and downstream."},
+{q:"What is the core gain of internship?",opts:["Cultural perspective","Professional identity & practical competence","Language skills","Academic papers"],ans:"UFxOQRMUFRwXAQ==",exp:"Internship builds industry skills, networks, and career direction testing in real professional environments."},
+{q:"What is the unique value of exchange study?",opts:["Credit transfer","Rebuilding assumptions & cross-cultural adaptability","Higher GPA","Escaping pressure"],ans:"UFxOQRMUFRwXAQ==",exp:"When everything familiar suddenly doesn't work, you're forced to rebuild assumptions from scratch — exchange's unique cognitive restructuring."},
+{q:"What is the ideal sequence of experiences?",opts:["Internship then exchange","Exchange then internship","Internship only","Exchange only"],ans:"UFxOQRMUFRwXAQ==",exp:"Exchange first opens perspectives and adaptability; then internship leverages that international experience. Lens first, leverage second."},
+{q:"Field practicum can be compared to?",opts:["Practicing in a pool","Being thrown into the ocean","Reading on shore","Watching swimming videos"],ans:"UFxOQRMUFRwXAQ==",exp:"The pool (flipped classroom) optimizes practice, but the ocean (field practicum) has waves, currents, and real-world variables."},
+{q:"Which quote best represents field practicum?",opts:["Tell me and I forget","Show me and I remember","Involve me and I understand","Test me and I pass"],ans:"UFxOQRMUFRwXAg==",exp:"'Involve me and I understand' — field practicum is the most thorough involvement, understanding through participation."}
 ],
 
 m3_nav:"3. Teaching & AI",m3_title:"Teaching Responsibility & AI Integration",
-m3_p1:"Innovative teaching vs teaching the full curriculum well — which matters more? Many so-called innovations spend three class sessions on group activities with great fanfare, but students fail basic concepts afterward. That's not innovation; it's replacing content with form. Master the basics first, then innovate.",
-m3_p2:"\"Innovation's proper positioning is an upgrade of 'teaching well,' not a replacement. A teacher who can't even cover the basics but rushes into flipping and PBL is building castles on sand.\"",
-m3_p3:"Traditional innovative methods (flipping, PBL, TBL, PjBL) are the teaching operating system, providing the underlying logic of learning design. AI is powerful new hardware that unlocks previously impossible possibilities. Unstable roots make wings dangerous; deep roots let wings carry you to places you've never reached.",
+m3_p1:"Innovative teaching vs solid teaching — which matters more? For most teachers, mastering basics matters far more. Innovation doesn't equal effectiveness — many innovations produce fanfare but students fail basic concepts. That's replacing content with form. Solid teaching is itself sophisticated expertise — clear lectures reaching different levels, precise assessment. Innovation requires solid foundations — you must know what to teach before discussing different methods.",
+m3_p2:"\"Innovation's proper positioning is an upgrade of 'teaching well,' not a replacement. A teacher who can't cover basics but rushes into flipping and PBL is building castles on sand. Students need clear, solid teachers — not trendy methods with hollow content. Master basics first, then innovate — this sequence cannot be reversed.\"",
+m3_p3:"Traditional methods (flipped, PBL, TBL, PjBL, cooperative learning, differentiated instruction, scaffolding) form the teaching 'operating system' — underlying logic from decades of cognitive science: why problem-driven? Why self-study before discussion? These principles don't become obsolete because AI appeared. Human knowledge construction hasn't changed.",
+m3_p4:"AI is powerful new 'hardware' unlocking new possibilities. SDL + AI: real-time dialogue and customized explanations beyond passive videos. TBL + AI: debate with AI before team discussion; AI as third-party perspective breaking groupthink. PBL + AI: rapid data gathering, hypothesis generation, solution simulation. Flipped + AI: pre-class instant Q&A, in-class real-time diagnostics for each student.",
+m3_p5:"But AI without pedagogical foundations is dangerous. Telling students to 'ask ChatGPT and submit a report' without understanding PBL isn't AI integration — it's outsourcing teaching. Not understanding scaffolding means not knowing when students should struggle vs receive support. Traditional methods are roots, AI is wings. Unstable roots make wings dangerous; deep roots let wings carry you to unreachable heights. Master basics, then innovate — more critical than ever in the AI era.",
 m3_cards:[
 {title:"SDL + AI",desc:"AI companions dramatically boost self-study efficiency and depth — real-time dialogue, follow-up questions, customized explanations, far beyond watching videos alone."},
 {title:"TBL + AI",desc:"Debate your viewpoints with AI before team discussions, bringing more refined ideas. AI also serves as a third-party perspective provider, breaking groupthink."},
@@ -358,20 +392,22 @@ m3_terms:[
 {front:"Roots & Wings",back:"Traditional methods are roots, AI is wings. AI integration without pedagogical foundations just outsources teaching to AI — not real innovation."}
 ],
 m3_q:[
-{q:"What is innovation's proper positioning?",opts:["Replace traditional teaching","An upgrade of teaching well","Pure formal change","Extra burden"],ans:1,exp:"Innovation is built on solid teaching foundations as an upgrade, not a replacement. Build on sand and it collapses."},
-{q:"AI integration without pedagogical foundations becomes?",opts:["True innovation","Outsourcing teaching to AI","Differentiated instruction","Flipped classroom"],ans:1,exp:"Telling students to 'ask AI and submit a report' without understanding PBL design teaches copy-paste, not knowledge."},
-{q:"Traditional innovative methods are metaphorically called?",opts:["Wings","Engine","Operating system","Hardware"],ans:2,exp:"Traditional methods are the teaching OS providing underlying logic; AI is new hardware providing execution capability."},
-{q:"What is AI's value in TBL?",opts:["Replace team discussion","Third-party perspective provider","Students skip preparation","Reduce interaction"],ans:1,exp:"AI helps individuals sharpen viewpoints before discussion and provides third-party perspectives to break groupthink."},
-{q:"Why master basics first?",opts:["Innovation doesn't matter","Solid teaching itself is sophisticated expertise","Students don't need innovation","Administrative requirement"],ans:1,exp:"Clear lectures, reaching all levels of students, precise assessment — these fundamentals at their best are sophisticated expertise."},
-{q:"AI's key breakthrough in SDL is?",opts:["Replace teachers","Always-available AI companion for dialogue","Auto-complete homework","No learning needed"],ans:1,exp:"AI companions transform self-study from passive video watching to interactive dialogue with real-time follow-up and customized explanations."},
-{q:"'Building castles on sand' refers to?",opts:["Solid foundation before innovation","No foundation needed","Innovation is most important","Abandon teaching"],ans:0,exp:"Rushing into innovative methods without mastering basics is like building castles on sand — the foundation is unstable."},
-{q:"The correct roots-and-wings combination is?",opts:["Wings only","Roots only","Deep roots then grow wings","Neither needed"],ans:2,exp:"With deep roots in traditional methods, AI wings can carry you to places previously unreachable."}
+{q:"What is innovation's proper positioning?",opts:["Replace traditional teaching","An upgrade of teaching well","Pure formal change","Extra burden"],ans:"UFxOQRMUFRwXAQ==",exp:"Innovation is built on solid teaching foundations as an upgrade, not a replacement. Build on sand and it collapses."},
+{q:"AI integration without pedagogical foundations becomes?",opts:["True innovation","Outsourcing teaching to AI","Differentiated instruction","Flipped classroom"],ans:"UFxOQRMUFRwXAQ==",exp:"Telling students to 'ask AI and submit a report' without understanding PBL design teaches copy-paste, not knowledge."},
+{q:"Traditional innovative methods are metaphorically called?",opts:["Wings","Engine","Operating system","Hardware"],ans:"UFxOQRMUFRwXAg==",exp:"Traditional methods are the teaching OS providing underlying logic; AI is new hardware providing execution capability."},
+{q:"What is AI's value in TBL?",opts:["Replace team discussion","Third-party perspective provider","Students skip preparation","Reduce interaction"],ans:"UFxOQRMUFRwXAQ==",exp:"AI helps individuals sharpen viewpoints before discussion and provides third-party perspectives to break groupthink."},
+{q:"Why master basics first?",opts:["Innovation doesn't matter","Solid teaching itself is sophisticated expertise","Students don't need innovation","Administrative requirement"],ans:"UFxOQRMUFRwXAQ==",exp:"Clear lectures, reaching all levels of students, precise assessment — these fundamentals at their best are sophisticated expertise."},
+{q:"AI's key breakthrough in SDL is?",opts:["Replace teachers","Always-available AI companion for dialogue","Auto-complete homework","No learning needed"],ans:"UFxOQRMUFRwXAQ==",exp:"AI companions transform self-study from passive video watching to interactive dialogue with real-time follow-up and customized explanations."},
+{q:"'Building castles on sand' refers to?",opts:["Solid foundation before innovation","No foundation needed","Innovation is most important","Abandon teaching"],ans:"UFxOQRMUFRwXAA==",exp:"Rushing into innovative methods without mastering basics is like building castles on sand — the foundation is unstable."},
+{q:"The correct roots-and-wings combination is?",opts:["Wings only","Roots only","Deep roots then grow wings","Neither needed"],ans:"UFxOQRMUFRwXAg==",exp:"With deep roots in traditional methods, AI wings can carry you to places previously unreachable."}
 ],
 
 m4_nav:"4. Future of Campus",m4_title:"The Future of Campus & Classroom",
-m4_p1:"Once AI is integrated into EML, EMI shifts from 'necessity' to 'luxury.' EMI used to be the only channel to achieve EML. AI opens other channels — students can autonomously build English learning environments through AI, no longer fully dependent on professors teaching in English. Invest effort in ensuring every student can EML, not requiring every teacher to EMI.",
-m4_p2:"\"The classroom won't disappear, but it downgrades from 'the main venue of learning' to 'a node in the learning ecosystem' — appearing less frequently, but with greater weight each time.\"",
-m4_p3:"PBL-driven inquiry, PjBL output, AI-empowered SDL, online TBL, connected to field practicum — once this system is assembled, the campus shifts from 'education's default container' to 'education's optional module.' The future isn't 'campus or no campus' but 'no longer assuming everyone needs a campus.'",
+m4_p1:"EMI (English as Medium of Instruction) means teachers use English for subject content. EML (English as Medium of Learning) flips to the student: how learners construct knowledge through English. EMI without EML awareness becomes a one-person English show. The ideal: EML-oriented EMI design — teaching in English while ensuring students truly learn through English.",
+m4_p2:"\"Once AI integrates into EML, EMI shifts from 'necessity' to 'luxury.' AI opens other EML channels — students build English learning environments through AI, no longer fully dependent on English instruction. Invest in ensuring every student can EML (AI lowers the barrier), not requiring every teacher to EMI (forced English may sacrifice subject depth). High-quality EMI remains premium but no longer mandatory standard.\"",
+m4_p3:"With the full system assembled (PBL inquiry + PjBL output + AI-empowered SDL + online TBL + field practicum), classroom functions are replaced one by one. But one function remains a structural gap: 'ritual co-presence.' Physical co-presence creates learning tension online can't replicate — the cognitive conflict from someone's frown, a glance, a sigh, a silence. These micro-signals compress to near-zero online yet are the most critical deep-learning triggers.",
+m4_p4:"The classroom should become three things: First, an arena for high-density collision — learners spar with their SDL and AI exploration results, not listen to lectures. Second, a petri dish for relationships and trust — online discussion with people you've met and shared meals with reaches completely different depths. Third, a sanctuary for reflection — periodically stop and ask: what have we learned? What does it mean? The classroom downgrades from main venue to ecosystem node — less frequent, far heavier.",
+m4_p5:"Campus shifts from 'default container' to 'optional module.' Agentic AI + online learning + field practice form decentralized base infrastructure. Campus becomes optional for those needing rites of passage, community belonging, identity transformation. Some choose full campus experience (leaving home at eighteen, living with strangers, first independence); others choose online + field paths. Both lead to certified outcomes. The future isn't 'campus or no campus' but 'no longer assuming everyone needs campus.' Perhaps six times per semester, each an irreplaceable peak experience.",
 m4_cards:[
 {title:"EMI → EML Flip",desc:"EMI is means (teachers use English to teach), EML is purpose (students learn through English). AI decouples EML from EMI dependence."},
 {title:"Classroom's Three New Functions",desc:"Arena for high-density collision, petri dish for relationships and trust, sanctuary for reflection and meaning-making. Less frequent, more impactful."},
@@ -384,20 +420,23 @@ m4_terms:[
 {front:"Ritual Co-presence",back:"The learning tension, community belonging, and collective reflection created by physical co-presence — an existential experience that cannot be fully replicated online."}
 ],
 m4_q:[
-{q:"After AI integrates into EML, EMI becomes?",opts:["More important","Shifts from necessity to luxury","Completely disappears","Unaffected"],ans:1,exp:"AI enables students to autonomously build English learning environments; EMI is no longer the only channel for EML."},
-{q:"The classroom's future role in education is?",opts:["The main venue","A node in the learning ecosystem","Completely gone","Unchanged"],ans:1,exp:"Classroom downgrades from main venue to node — less frequent but heavier: collision, belonging, reflection."},
-{q:"'Ritual co-presence' in the classroom means?",opts:["Attendance checking","Community identity through physical co-presence","Exam system","Graduation ceremony"],ans:1,exp:"Shared physical space creates eye contact, sighs, silence — micro-signals that online environments compress to near-zero."},
-{q:"Campus becoming an 'optional module' means?",opts:["Nobody needs campus","Campus is no longer everyone's mandatory path","Campus becomes more important","No change"],ans:1,exp:"Some choose full campus experience, others choose online + field paths. Both lead to equally certified learning outcomes."},
-{q:"The base infrastructure of future education is?",opts:["Traditional campus","Agentic AI + online learning + field practice","Classroom only","Internship only"],ans:1,exp:"Decentralized system becomes base infrastructure; campus experience becomes the optional add-on layer."},
-{q:"In what aspect does EMI retain value?",opts:["Knowledge delivery","Live academic English demonstration & identity modeling","Exam needs","Administrative rules"],ans:1,exp:"Professors demonstrating real-time English argumentation provide academic identity models that AI currently cannot."},
-{q:"Where should effort be invested more effectively?",opts:["Requiring every teacher to EMI","Ensuring every student can EML","Cancel English teaching","Teach only in Chinese"],ans:1,exp:"Enabling every student to learn through English via AI and other channels is more effective and equitable than forcing EMI on every teacher."},
-{q:"Each campus gathering, though rare, should be?",opts:["Routine","An irreplaceable peak experience","Pure socializing","Administrative need"],ans:1,exp:"Each physical gathering is a peak experience of high-density collision, trust-building, and collective reflection."}
+{q:"After AI integrates into EML, EMI becomes?",opts:["More important","Shifts from necessity to luxury","Completely disappears","Unaffected"],ans:"UFxOQRMUFRwXAQ==",exp:"AI enables students to autonomously build English learning environments; EMI is no longer the only channel for EML."},
+{q:"The classroom's future role in education is?",opts:["The main venue","A node in the learning ecosystem","Completely gone","Unchanged"],ans:"UFxOQRMUFRwXAQ==",exp:"Classroom downgrades from main venue to node — less frequent but heavier: collision, belonging, reflection."},
+{q:"'Ritual co-presence' in the classroom means?",opts:["Attendance checking","Community identity through physical co-presence","Exam system","Graduation ceremony"],ans:"UFxOQRMUFRwXAQ==",exp:"Shared physical space creates eye contact, sighs, silence — micro-signals that online environments compress to near-zero."},
+{q:"Campus becoming an 'optional module' means?",opts:["Nobody needs campus","Campus is no longer everyone's mandatory path","Campus becomes more important","No change"],ans:"UFxOQRMUFRwXAQ==",exp:"Some choose full campus experience, others choose online + field paths. Both lead to equally certified learning outcomes."},
+{q:"The base infrastructure of future education is?",opts:["Traditional campus","Agentic AI + online learning + field practice","Classroom only","Internship only"],ans:"UFxOQRMUFRwXAQ==",exp:"Decentralized system becomes base infrastructure; campus experience becomes the optional add-on layer."},
+{q:"In what aspect does EMI retain value?",opts:["Knowledge delivery","Live academic English demonstration & identity modeling","Exam needs","Administrative rules"],ans:"UFxOQRMUFRwXAQ==",exp:"Professors demonstrating real-time English argumentation provide academic identity models that AI currently cannot."},
+{q:"Where should effort be invested more effectively?",opts:["Requiring every teacher to EMI","Ensuring every student can EML","Cancel English teaching","Teach only in Chinese"],ans:"UFxOQRMUFRwXAQ==",exp:"Enabling every student to learn through English via AI and other channels is more effective and equitable than forcing EMI on every teacher."},
+{q:"Each campus gathering, though rare, should be?",opts:["Routine","An irreplaceable peak experience","Pure socializing","Administrative need"],ans:"UFxOQRMUFRwXAQ==",exp:"Each physical gathering is a peak experience of high-density collision, trust-building, and collective reflection."}
 ],
 
 m5_nav:"5. Professors & Youth",m5_title:"Professors & Young People's Hope",
-m5_p1:"University professors' three roles — teacher, researcher, mentor — face total deconstruction in the AI era. Teaching is done better by AI with more patience; Agentic AI can autonomously complete the entire research pipeline from problem discovery to publication, and it's virtually undetectable; Physical AI breaches the last defense of the mentor role.",
-m5_p2:"\"Do even 1% of professors do research AI can't replace? When Agentic AI meets all academic game rules, the research motivation itself collapses — not because they're bad, but because the incentive structure makes 'doing research yourself' an irrational choice.\"",
-m5_p3:"But the fall of the professor era isn't young people's doom — it's their dawn. Young people are the first generation of AI natives, with no old habits to break and no old identities to defend. The real hope: a person who asks good questions has hope in any era, and in the AI era, their leverage is multiplied a thousandfold.",
+m5_p1:"Professors' three roles — teacher, researcher, mentor — face total AI-era deconstruction. The teacher role falls first: AI delivers knowledge more patiently, customizably, 24/7, re-explaining fifty times without frustration. Professors' former scarcity — being among few accessible domain experts — dissolves when AI approaches expert-level answers in any field. An average scripted lecture has marginal value approaching zero.",
+m5_p2:"\"Agentic AI can complete the full pipeline — problem discovery, literature review, hypothesis, research design, data analysis, writing, submission to acceptance — and it's undetectable. The Agent works in stages, leaving traces that look like human thought: emails, reading notes, data files, revision histories — all under the professor's name and account. From outside, indistinguishable from professor-conducted research. Do even 1% produce irreplaceable research? I doubt it.\"",
+m5_p3:"Most academic research is incremental gap-filling — tweaking variables within existing frameworks. AI does this more efficiently. True breakthroughs 'flip the table' by questioning frameworks entirely, but such professors may be far below 1%. More devastating: when Agentic AI meets all academic game rules, research motivation collapses — incentive structures make self-research irrational. Under publish-or-perish, why carry a burden you can outsource?",
+m5_p4:"Professors lack counseling training. Under publishing, teaching, and administrative pressure, expecting them to mentor better than AI Agents is asking a tree to yield fish. Physical AI — embodied robots sensing expressions and body language, handing tissues when you cry, trained in all counseling schools, available 24/7, remembering every word and emotion — provides what most professors cannot. An always-present, tireless, top-capability Physical AI mentor versus a paper-chasing professor with fifteen minutes monthly and no counseling training — most students' choice is clear. Physical AI also solves scalability: every student gets a dedicated top-quality mentor — a fundamental leap in educational equity.",
+m5_p5:"Academia faces three paths. Path 1 (collapse): everyone secretly uses Agents, papers explode but nobody thinks, peer review becomes AI writing reviewed by AI published by AI — machines writing for machines. Path 2 (redefine): acknowledge AI can research, redefine human value as asking questions AI can't conceive. Path 3 (change rules): abandon detection, completely change evaluation — judge by contributions AI can't fake. Path 1 happens first, forcing Path 3. 'Publishing papers' loses its capability-signal function — like luxury brands losing status if everyone could buy counterfeits.",
+m5_p6:"But professors' era ending isn't young people's doom — it's their dawn. Professors' plight: existing value hollowed out, moats flattened. Students' situation is opposite: starting from zero on an unprecedentedly level field. Young people are first AI natives — no adaptation needed, AI is native tool. Previously, independent research required years of degrees and credentials. Now, a curious twenty-year-old with good questions and AI skills can begin today. Hope in three dimensions: first, you're AI natives without old-game muscle memory. Second, AI replaces systematizable abilities while curiosity, cross-domain intuition, meaning-seeking, and courage are more abundant in youth. Third, a person who asks good questions has hope in any era — in the AI era, their leverage is multiplied a thousandfold.",
 m5_cards:[
 {title:"Researcher Role Collapse",desc:"Agentic AI's fully automated research pipeline — from literature review to publication acceptance — is virtually undetectable. Academic integrity's foundation is crumbling."},
 {title:"Mentor Role Breach",desc:"Physical AI provides embodied presence, infinite patience, and professional counseling skills. Functionally may surpass most professors who lack counseling training."},
@@ -410,14 +449,14 @@ m5_terms:[
 {front:"AI Natives",back:"First generation growing up with AI as native tools. No need to 'adapt' to AI. Core advantages: curiosity, cross-domain intuition, meaning-seeking, courage to act."}
 ],
 m5_q:[
-{q:"Which professor role is replaced by AI first?",opts:["Researcher","Teacher","Mentor","Administrator"],ans:1,exp:"AI is more patient, more customizable, available 24/7 in knowledge delivery — the teacher role falls first."},
-{q:"Why is Agentic AI research virtually undetectable?",opts:["AI confesses","Leaves obvious traces","Simulates all human research behaviors","Can only write short papers"],ans:2,exp:"The agent works in stages, leaving digital footprints that look like human thought processes, statistically indistinguishable."},
-{q:"When AI meets all academic game rules, professors' research motivation will?",opts:["Strengthen","Collapse","Stay unchanged","Shift to teaching"],ans:1,exp:"Incentive structures make 'doing research yourself' irrational. Why carry a burden you can outsource?"},
-{q:"Physical AI's structural advantage in mentorship is?",opts:["Has a degree","Scalable high-quality companionship","Has publications","Has authority"],ans:1,exp:"Every student can have a dedicated, top-quality Physical AI mentor — a fundamental leap in educational equity."},
-{q:"The most likely evolution path for academia is?",opts:["Status quo","Path 1 (collapse) first, forcing Path 3","Direct Path 2","Return to tradition"],ans:1,exp:"Short-term gray areas everywhere, collective pretense self-destructs, forcing new evaluation standards AI cannot fake."},
-{q:"Young people's core advantage is?",opts:["Credentials","AI natives with no legacy baggage","Professor protection","Institutional guarantees"],ans:1,exp:"No old habits to break, no old identities to defend — first generation able to use AI from age 20 for what previously required entire teams."},
-{q:"The most valuable skill combination in the AI era is?",opts:["Memorization","Autonomous questioning × systematic inquiry × AI collaboration","Test-taking skills","Following instructions"],ans:1,exp:"A person who asks good questions has hope in any era; in the AI era, their leverage is multiplied a thousandfold."},
-{q:"The fall of the professor era means for young people?",opts:["Doom","Dawn","No impact","More need for professors"],ans:1,exp:"Old knowledge monopolies break down; young people and veterans stand on nearly the same starting line — and youth may run faster."}
+{q:"Which professor role is replaced by AI first?",opts:["Researcher","Teacher","Mentor","Administrator"],ans:"UFxOQRMUFRwXAQ==",exp:"AI is more patient, more customizable, available 24/7 in knowledge delivery — the teacher role falls first."},
+{q:"Why is Agentic AI research virtually undetectable?",opts:["AI confesses","Leaves obvious traces","Simulates all human research behaviors","Can only write short papers"],ans:"UFxOQRMUFRwXAg==",exp:"The agent works in stages, leaving digital footprints that look like human thought processes, statistically indistinguishable."},
+{q:"When AI meets all academic game rules, professors' research motivation will?",opts:["Strengthen","Collapse","Stay unchanged","Shift to teaching"],ans:"UFxOQRMUFRwXAQ==",exp:"Incentive structures make 'doing research yourself' irrational. Why carry a burden you can outsource?"},
+{q:"Physical AI's structural advantage in mentorship is?",opts:["Has a degree","Scalable high-quality companionship","Has publications","Has authority"],ans:"UFxOQRMUFRwXAQ==",exp:"Every student can have a dedicated, top-quality Physical AI mentor — a fundamental leap in educational equity."},
+{q:"The most likely evolution path for academia is?",opts:["Status quo","Path 1 (collapse) first, forcing Path 3","Direct Path 2","Return to tradition"],ans:"UFxOQRMUFRwXAQ==",exp:"Short-term gray areas everywhere, collective pretense self-destructs, forcing new evaluation standards AI cannot fake."},
+{q:"Young people's core advantage is?",opts:["Credentials","AI natives with no legacy baggage","Professor protection","Institutional guarantees"],ans:"UFxOQRMUFRwXAQ==",exp:"No old habits to break, no old identities to defend — first generation able to use AI from age 20 for what previously required entire teams."},
+{q:"The most valuable skill combination in the AI era is?",opts:["Memorization","Autonomous questioning × systematic inquiry × AI collaboration","Test-taking skills","Following instructions"],ans:"UFxOQRMUFRwXAQ==",exp:"A person who asks good questions has hope in any era; in the AI era, their leverage is multiplied a thousandfold."},
+{q:"The fall of the professor era means for young people?",opts:["Doom","Dawn","No impact","More need for professors"],ans:"UFxOQRMUFRwXAQ==",exp:"Old knowledge monopolies break down; young people and veterans stand on nearly the same starting line — and youth may run faster."}
 ],
 
 m6_nav:"6. Resources",m6_title:"Extended Learning Resources",m6_desc:"Curated external resources related to this course, helping you explore the transformation of education in the AI era.",
@@ -435,7 +474,7 @@ architect_url:"https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/2
 const TOTAL = 9; // M0 + M1-M5 + M6 + M7 + M8
 
 // ─── Reusable Components ───
-const H2=({children,icon,number})=><h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] leading-tight mb-6 flex items-center gap-3">{icon&&<span className="text-2xl">{icon}</span>}{number!==undefined&&<span>{number}.</span>}<span>{children}</span></h2>;
+const H2=({children,icon,number})=><h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-[#004030] dark:text-[#D8C3A5] leading-tight flex items-center gap-3">{icon&&<span className="text-2xl">{icon}</span>}{number!==undefined&&<span>{number}.</span>}<span>{children}</span></h2>;
 
 const FlipCard=({front,back,t})=>{
   const[flipped,setFlipped]=useState(false);
@@ -454,35 +493,46 @@ const FlipCard=({front,back,t})=>{
   );
 };
 
-const ModuleQuiz=({questions,t,moduleId,onQuizSubmit})=>{
+const ModuleQuiz=({questions,t,moduleId,onQuizSubmit,onRetry,mastered=[]})=>{
+  const totalQ=questions.length;
   const[selected,setSelected]=useState({});
   const[submitted,setSubmitted]=useState(false);
-  const[quizIndices]=useState(()=>[...Array(questions.length).keys()].sort(()=>Math.random()-0.5).slice(0,4));
-  const score=submitted?quizIndices.filter((qIdx,i)=>selected[i]===questions[qIdx].ans).length:0;
+  const remaining=React.useMemo(()=>[...Array(totalQ).keys()].filter(i=>!mastered.includes(i)),[mastered,totalQ]);
+  const[quizData]=useState(()=>{
+    const pool=[...remaining].sort(()=>Math.random()-0.5).slice(0,Math.min(4,remaining.length));
+    return pool.map(qIdx=>{
+      const q=questions[qIdx];const ci=_d(q.ans);
+      const{shuffledOpts,newCorrectIdx}=shuffleOptions(q.opts,ci);
+      return{qIdx,q:q.q,opts:shuffledOpts,ans:newCorrectIdx,exp:q.exp};
+    });
+  });
+  const score=submitted?quizData.filter((d,i)=>selected[i]===d.ans).length:0;
+  const allDone=remaining.length===0;
+  if(allDone)return(<div className="mt-8 bg-green-50 dark:bg-green-900/20 rounded-2xl p-6 border border-green-300 dark:border-green-700 text-center"><p className="text-lg font-bold text-green-700 dark:text-green-300">{t.quiz_all_mastered}</p><p className="text-sm text-green-600 dark:text-green-400 mt-2">{mastered.length}/{totalQ}</p></div>);
+  const titleText=t.quiz_title_fn?t.quiz_title_fn(quizData.length,totalQ,mastered.length):t.quiz_title;
   return(
     <div className="mt-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-      <h3 className="text-lg font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-6">{t.quiz_title}</h3>
-      {quizIndices.map((qIdx,i)=>{const q=questions[qIdx];return(
-        <div key={qIdx} className="mb-6">
-          <p className="font-bold mb-3">{i+1}. {q.q}</p>
-          <div className="space-y-2">{q.opts.map((opt,oIdx)=>(
-            <button key={oIdx} onClick={()=>!submitted&&setSelected(s=>({...s,[i]:oIdx}))}
+      <h3 className="text-lg font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-6">{titleText}</h3>
+      {quizData.map((d,i)=>(
+        <div key={d.qIdx} className="mb-6">
+          <p className="font-bold mb-3">{i+1}. {d.q}</p>
+          <div className="space-y-2">{d.opts.map((opt,j)=>(
+            <button key={j} onClick={()=>!submitted&&setSelected(s=>({...s,[i]:j}))}
               className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm
-                ${submitted?oIdx===q.ans?'bg-green-100 border-green-500 dark:bg-green-900/30':selected[i]===oIdx?'bg-red-100 border-red-400 dark:bg-red-900/30':'border-slate-200 dark:border-slate-700':selected[i]===oIdx?'border-[#004030] dark:border-[#D8C3A5] bg-[#004030]/5':'border-slate-200 dark:border-slate-700 hover:border-slate-400'}`}>{opt}</button>
+                ${submitted?j===d.ans?'bg-green-100 border-green-500 dark:bg-green-900/30':selected[i]===j?'bg-red-100 border-red-400 dark:bg-red-900/30':'border-slate-200 dark:border-slate-700':selected[i]===j?'border-[#004030] dark:border-[#D8C3A5] bg-[#004030]/5':'border-slate-200 dark:border-slate-700 hover:border-slate-400'}`}>{opt}</button>
           ))}</div>
-          {submitted&&<p className="mt-2 text-sm text-slate-600 dark:text-slate-400 italic">{t.explanation}: {q.exp}</p>}
+          {submitted&&<p className="mt-2 text-sm text-slate-600 dark:text-slate-400 italic">{t.explanation}: {d.exp}</p>}
         </div>
-      );})}
+      ))}
       {!submitted
-        ?<button onClick={()=>{setSubmitted(true);const c=quizIndices.filter((qIdx,i)=>selected[i]===questions[qIdx].ans).length;onQuizSubmit(moduleId,c,quizIndices.length);}}
-          disabled={Object.keys(selected).length<quizIndices.length}
+        ?<button onClick={()=>{setSubmitted(true);const cIdxs=quizData.filter((d,i)=>selected[i]===d.ans).map(d=>d.qIdx);const aIdxs=quizData.map(d=>d.qIdx);onQuizSubmit(moduleId,cIdxs,aIdxs);}}
+          disabled={Object.keys(selected).length<quizData.length}
           className="px-6 py-2 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40">{t.submit}</button>
         :<div className="flex items-center gap-4">
-          <span className="font-bold text-[#004030] dark:text-[#D8C3A5]">{t.score}: {score}/{quizIndices.length}</span>
-          <button onClick={()=>{setSelected({});setSubmitted(false);}}
+          <span className="font-bold text-[#004030] dark:text-[#D8C3A5]">{t.score}: {score}/{quizData.length}</span>
+          <button onClick={()=>{if(onRetry)onRetry(moduleId)}}
             className="px-6 py-2 border border-[#004030] dark:border-[#D8C3A5] text-[#004030] dark:text-[#D8C3A5] font-bold rounded-lg">{t.retry}</button>
-        </div>
-      }
+        </div>}
     </div>
   );
 };
@@ -540,7 +590,7 @@ const EducationStackLab=({lang})=>{
 
 const RoleSurvivalLab=({lang})=>{
   const roles=lang==='zh'
-    ?[{name:'知識傳遞者',survival:5,reason:'AI 更有耐心、更客製化、24/7在線'},{name:'研究者（填坑型）',survival:8,reason:'Agentic AI 全自動流水線且不可偵測'},{name:'研究者（掀桌型）',survival:40,reason:'框架級突破暫時需要人類直覺，但<1%'},{name:'導師（功能性）',survival:10,reason:'Physical AI 規模化高品質陪伴'},{name:'導師（存在性）',survival:35,reason:'真人生命厚度，但非人人需要'},{name:'守門人',survival:25,reason:'品質控制仍需，但機制在鬆動'}]
+    ?[{name:'知識傳遞者',survival:5,reason:'AI 更有耐心、更客製化、24/7在線'},{name:'研究者（填坑型）',survival:8,reason:'Agentic AI 全自動流水線且不可偵測'},{name:'研究者（掀桌型）',survival:40,reason:'架構級突破暫時需要人類直覺，但<1%'},{name:'導師（功能性）',survival:10,reason:'Physical AI 規模化高品質陪伴'},{name:'導師（存在性）',survival:35,reason:'真人生命厚度，但非人人需要'},{name:'守門人',survival:25,reason:'品質控制仍需，但機制在鬆動'}]
     :[{name:'Knowledge Deliverer',survival:5,reason:'AI is more patient, customizable, 24/7'},{name:'Researcher (Incremental)',survival:8,reason:'Agentic AI full pipeline, undetectable'},{name:'Researcher (Paradigm-shift)',survival:40,reason:'Framework-level breakthroughs need human intuition, but <1%'},{name:'Mentor (Functional)',survival:10,reason:'Physical AI scalable quality companionship'},{name:'Mentor (Existential)',survival:35,reason:'Human life depth, but not universally needed'},{name:'Gatekeeper',survival:25,reason:'Quality control needed, but mechanisms loosening'}];
   return(
     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
@@ -682,7 +732,8 @@ function App(){
   const[menuOpen,setMenuOpen]=useState(false);
   const[ttsState,setTtsState]=useState('idle');
   const[studentInfo,setStudentInfo]=useState({group:'',dept:'',id:'',name:''});
-  const[analytics,setAnalytics]=useState({time:Array(TOTAL).fill(0),clicks:Array(TOTAL).fill(0),quizCorrect:Array(TOTAL).fill(0),quizTotal:Array(TOTAL).fill(0)});
+  const[analytics,setAnalytics]=useState({time:Array(TOTAL).fill(0),clicks:Array(TOTAL).fill(0),quizMastered:Array.from({length:TOTAL},()=>[]),quizAttempted:Array.from({length:TOTAL},()=>[])});
+  const[quizRound,setQuizRound]=useState(Array(TOTAL).fill(0));
   const contentRef=useRef(null);
   const menuRef=useRef(null);
   const t=dict[lang];
@@ -697,7 +748,14 @@ function App(){
   const handleContentClick=()=>{setAnalytics(a=>{const nc=[...a.clicks];nc[module]++;return{...a,clicks:nc};});};
 
   // Quiz submit
-  const handleQuizSubmit=(mid,correct,total)=>{setAnalytics(a=>{const qc=[...a.quizCorrect],qt=[...a.quizTotal];qc[mid]=correct;qt[mid]=total;return{...a,quizCorrect:qc,quizTotal:qt};});};
+  const handleQuizRetry=(mid)=>{setQuizRound(r=>{const n=[...r];n[mid]++;return n;});};
+  const handleQuizSubmit=(mid,correctIdxs,attemptedIdxs)=>{setAnalytics(a=>{
+    const qm=a.quizMastered.map(arr=>[...arr]);
+    const qa=a.quizAttempted.map(arr=>[...arr]);
+    correctIdxs.forEach(idx=>{if(!qm[mid].includes(idx))qm[mid].push(idx)});
+    attemptedIdxs.forEach(idx=>{if(!qa[mid].includes(idx))qa[mid].push(idx)});
+    return{...a,quizMastered:qm,quizAttempted:qa};
+  });};
 
   // Menu outside click
   useEffect(()=>{if(!menuOpen)return;const h=(e)=>{if(menuRef.current&&!menuRef.current.contains(e.target))setMenuOpen(false);};document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h);},[menuOpen]);
@@ -716,7 +774,7 @@ function App(){
       const sep=lang==='zh'?'。 ':'. ';
       let texts=[];
       if(module===0){texts=[t.m0_title,t.m0_intro,t.m0_why,t.m0_why_desc,...(t.m0_stats||[]).map(s=>`${s.label}: ${s.val}`),...(t.m0_modules||[]).map(m=>`${m.title}. ${m.desc}`)].filter(Boolean);}
-      else if(module>=1&&module<=5){const mk=`m${module}`;texts=[t[`${mk}_title`],...[1,2,3,4,5,6,7,8].map(n=>t[`${mk}_p${n}`]).filter(Boolean),...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc||''}`),...(t[`${mk}_timeline`]||[]).map(s=>`${s.title}. ${s.desc||''}`),...(t[`${mk}_examples`]||[]).map(e=>`${e.name||e.title||''}. ${e.desc||''}`),...(t[`${mk}_list`]||[]).map(item=>typeof item==='string'?item:`${item.title||''}. ${item.desc||''}`),t[`${mk}_alert`],t[`${mk}_quote`],t[`${mk}_note`],...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back])].filter(Boolean);}
+      else if(module>=1&&module<=5){const mk=`m${module}`;texts=[t[`${mk}_title`],...[1,2,3,4,5,6,7,8].map(n=>t[`${mk}_p${n}`]).filter(Boolean),...(t[`${mk}_cards`]||[]).map(c=>`${c.title}. ${c.desc||''}`),...(t[`${mk}_terms`]||[]).flatMap(term=>[term.front,term.back]),t[`${mk}_alert`],t[`${mk}_quote`],t[`${mk}_note`]].filter(Boolean);}
       else if(module===6){texts=[t.m6_title,t.m6_desc].filter(Boolean);}
       else if(module===7){texts=[t.mlab_title,t.mlab_desc].filter(Boolean);}
       else{texts=[t.analytics_title,t.analytics_desc].filter(Boolean);}
@@ -734,16 +792,51 @@ function App(){
   };
 
   // CSV export
+
+  const saveToLocal=()=>{
+    try{
+      const data={analytics,studentInfo,savedAt:new Date().toISOString()};
+      localStorage.setItem('edu_spa_analytics',JSON.stringify(data));
+      alert(t.analytics_saved);
+    }catch(e){console.error(e)}
+  };
+  const loadFromLocal=()=>{
+    try{
+      const raw=localStorage.getItem('edu_spa_analytics');
+      if(!raw){alert(t.analytics_no_saved);return}
+      const data=JSON.parse(raw);
+      if(data.analytics)setAnalytics(data.analytics);
+      if(data.studentInfo)setStudentInfo(data.studentInfo);
+      alert(t.analytics_loaded);
+    }catch(e){console.error(e)}
+  };
+  // Auto-load on mount
+  useEffect(()=>{
+    try{
+      const raw=localStorage.getItem('edu_spa_analytics');
+      if(raw){const data=JSON.parse(raw);if(data.analytics)setAnalytics(data.analytics);if(data.studentInfo)setStudentInfo(data.studentInfo);}
+    }catch(e){}
+  },[]);
   const exportCSV=()=>{
     const bom='\uFEFF';
-    const headers=['Module','Time(s)','Clicks','Correct','Answered','Total Questions','Accuracy'];
+    const isZh=lang==='zh';
+    const headers=isZh?['模組','停留時間(秒)','點擊次數','答對','已答','總題數','答對率']:['Module','Time(s)','Clicks','Correct','Answered','Total Questions','Accuracy'];
     const modNames=[t.m0_nav,t.m1_nav,t.m2_nav,t.m3_nav,t.m4_nav,t.m5_nav,t.m6_nav,t.mlab_nav,t.analytics_title];
-    let rows=modNames.map((name,i)=>[name,analytics.time[i],analytics.clicks[i],analytics.quizCorrect[i],analytics.quizTotal[i],i>=1&&i<=5?8:0,analytics.quizTotal[i]>0?Math.round(analytics.quizCorrect[i]/analytics.quizTotal[i]*100)+'%':'N/A'].join(','));
-    const meta=`\nStudent Info\nGroup,${studentInfo.group}\nDept,${studentInfo.dept}\nID,${studentInfo.id}\nName,${studentInfo.name}`;
+    let rows=modNames.map((name,i)=>[name,analytics.time[i],analytics.clicks[i],analytics.quizMastered[i].length,analytics.quizAttempted[i].length,i>=1&&i<=5?8:0,analytics.quizAttempted[i].length>0?Math.round(analytics.quizMastered[i].length/analytics.quizAttempted[i].length*100)+'%':'N/A'].join(','));
+    const infoLabel=isZh?'個人資訊':'Student Info';
+    const gLabel=isZh?'組別':'Group';
+    const dLabel=isZh?'系級':'Dept';
+    const iLabel=isZh?'學號':'ID';
+    const nLabel=isZh?'姓名':'Name';
+    const meta=`\n${infoLabel}\n${gLabel},${studentInfo.group}\n${dLabel},${studentInfo.dept}\n${iLabel},${studentInfo.id}\n${nLabel},${studentInfo.name}`;
     const csv=bom+headers.join(',')+'\n'+rows.join('\n')+meta;
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='learning_analytics.csv';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;
+    const spaName=isZh?'AI時代教育大解構':'EduDeconstruction';
+    const dateStr=new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download=`${spaName}_${studentInfo.group}-${studentInfo.dept}-${studentInfo.name}_${dateStr}.csv`;
+    a.click();URL.revokeObjectURL(url);
   };
 
   const moduleIcons=[<IconBookOpen size={16}/>,<IconLayers size={16}/>,<IconFlag size={16}/>,<IconCpu size={16}/>,<IconTrendingUp size={16}/>,<IconZap size={16}/>,<IconGlobe size={16}/>,<IconZapLab size={16}/>,<IconActivity size={16}/>];
@@ -792,14 +885,14 @@ function App(){
             {t[`${mKey}_terms`].map((term,i)=><FlipCard key={i} front={term.front} back={term.back} t={t}/>)}
           </div>
         </div>
-        <ModuleQuiz key={`quiz-${module}`} questions={t[`${mKey}_q`]} t={t} moduleId={module} onQuizSubmit={handleQuizSubmit}/>
+        <ModuleQuiz key={`quiz-${module}-r${quizRound[module]}`} questions={t[`${mKey}_q`]} t={t} moduleId={module} mastered={analytics.quizMastered[module]} onQuizSubmit={handleQuizSubmit} onRetry={handleQuizRetry}/>
       </div>
     );
   };
 
   const renderResources=()=>{
     const mainLinks=lang==='zh'
-      ?[{label:'Anthropic — Claude AI',url:'https://www.anthropic.com',desc:'本課程互動探究的 AI 對話夥伴'},{label:'UNESCO — AI in Education',url:'https://www.unesco.org/en/digital-education/artificial-intelligence',desc:'聯合國教科文組織 AI 教育政策與指引'},{label:'OECD Future of Education',url:'https://www.oecd.org/education/2030-project/',desc:'OECD 2030 教育願景與能力框架'},{label:'Bloom\'s Taxonomy Revisited',url:'https://cft.vanderbilt.edu/guides-sub-pages/blooms-taxonomy/',desc:'Bloom 認知層次分類——理解教學設計的基礎框架'}]
+      ?[{label:'Anthropic — Claude AI',url:'https://www.anthropic.com',desc:'本課程互動探究的 AI 對話夥伴'},{label:'UNESCO — AI in Education',url:'https://www.unesco.org/en/digital-education/artificial-intelligence',desc:'聯合國教科文組織 AI 教育政策與指引'},{label:'OECD Future of Education',url:'https://www.oecd.org/education/2030-project/',desc:'OECD 2030 教育願景與能力架構'},{label:'Bloom\'s Taxonomy Revisited',url:'https://cft.vanderbilt.edu/guides-sub-pages/blooms-taxonomy/',desc:'Bloom 認知層次分類——理解教學設計的基礎架構'}]
       :[{label:'Anthropic — Claude AI',url:'https://www.anthropic.com',desc:'The AI dialogue partner used in this course\'s inquiry'},{label:'UNESCO — AI in Education',url:'https://www.unesco.org/en/digital-education/artificial-intelligence',desc:'UNESCO AI education policies and guidelines'},{label:'OECD Future of Education',url:'https://www.oecd.org/education/2030-project/',desc:'OECD 2030 education vision and competency framework'},{label:'Bloom\'s Taxonomy Revisited',url:'https://cft.vanderbilt.edu/guides-sub-pages/blooms-taxonomy/',desc:'Understanding the foundational framework of instructional design'}];
     const otherLinks=lang==='zh'
       ?[{icon:'📚',cat:lang==='zh'?'學習方法論':'Learning Methodology',items:[{label:'Team-Based Learning Collaborative',url:'https://www.teambasedlearning.org',desc:'TBL 官方社群與資源'},{label:'Problem-Based Learning at Maastricht',url:'https://www.maastrichtuniversity.nl/education/why-um/problem-based-learning',desc:'PBL 發源地馬斯垂克大學的介紹'}]},{icon:'🤖',cat:lang==='zh'?'AI 與教育':'AI & Education',items:[{label:'Stanford HAI — AI in Education',url:'https://hai.stanford.edu/education',desc:'史丹佛人本 AI 研究院教育專題'},{label:'MIT Teaching Systems Lab',url:'https://tsl.mit.edu',desc:'MIT 教學系統實驗室——探索 AI 時代的教師角色'}]}]
@@ -842,15 +935,15 @@ function App(){
   const renderAnalytics=()=>{
     const totalTime=analytics.time.reduce((a,b)=>a+b,0);
     const totalClicks=analytics.clicks.reduce((a,b)=>a+b,0);
-    const totalCorrect=analytics.quizCorrect.reduce((a,b)=>a+b,0);
-    const totalAnswered=analytics.quizTotal.reduce((a,b)=>a+b,0);
+    const totalCorrect=analytics.quizMastered.reduce((a,b)=>a+b.length,0);
+    const totalAnswered=analytics.quizAttempted.reduce((a,b)=>a+b.length,0);
     const overallAcc=totalAnswered>0?Math.round(totalCorrect/totalAnswered*100):0;
     const canExport=studentInfo.group&&studentInfo.dept&&studentInfo.id&&studentInfo.name;
     const modNames=[t.m0_nav,t.m1_nav,t.m2_nav,t.m3_nav,t.m4_nav,t.m5_nav,t.m6_nav,t.mlab_nav,t.analytics_title];
     return(
       <div className={`space-y-8 ${fade}`}>
         <H2 icon={moduleIcons[8]} number={8}>{t.analytics_title}</H2>
-        <p className="text-slate-600 dark:text-slate-400">{t.analytics_desc}</p>
+        <p className="text-slate-600 dark:text-[#D8C3A5]/80">{t.analytics_desc}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
             <div className="text-2xl font-black font-serif text-[#004030] dark:text-[#D8C3A5]">{Math.floor(totalTime/60)}:{String(totalTime%60).padStart(2,'0')}</div>
@@ -878,7 +971,7 @@ function App(){
                 <td className="p-3 font-medium">{name}</td>
                 <td className="p-3 text-right">{analytics.time[i]}{t.analytics_sec}</td>
                 <td className="p-3 text-right">{analytics.clicks[i]}{t.analytics_times}</td>
-                <td className="p-3 text-right">{analytics.quizTotal[i]>0?`${analytics.quizCorrect[i]} / ${analytics.quizTotal[i]} / ${i>=1&&i<=5?8:0}`:t.analytics_no_data}</td>
+                <td className="p-3 text-right">{analytics.quizAttempted[i].length>0?`${analytics.quizMastered[i].length} / ${analytics.quizAttempted[i].length} / ${i>=1&&i<=5?8:0}`:t.analytics_no_data}</td>
               </tr>
             ))}</tbody>
           </table>
@@ -887,28 +980,32 @@ function App(){
           <h3 className="font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-4">{t.analytics_form_title}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_group}</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-[#D8C3A5] mb-1 block">{t.analytics_group}</label>
               <select value={studentInfo.group} onChange={e=>setStudentInfo(s=>({...s,group:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm">
                 <option value="">--</option>
                 {t.group_options.map(g=><option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_dept}</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-[#D8C3A5] mb-1 block">{t.analytics_dept}</label>
               <input placeholder={t.analytics_dept_ph} value={studentInfo.dept} onChange={e=>setStudentInfo(s=>({...s,dept:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_id}</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-[#D8C3A5] mb-1 block">{t.analytics_id}</label>
               <input placeholder={t.analytics_id_ph} value={studentInfo.id} onChange={e=>setStudentInfo(s=>({...s,id:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 block">{t.analytics_name}</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-[#D8C3A5] mb-1 block">{t.analytics_name}</label>
               <input placeholder={t.analytics_name_ph} value={studentInfo.name} onChange={e=>setStudentInfo(s=>({...s,name:e.target.value}))} className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm"/>
             </div>
           </div>
           <button onClick={exportCSV} disabled={!canExport}
             className="mt-4 px-6 py-2 bg-[#004030] dark:bg-[#D8C3A5] text-white dark:text-[#004030] font-bold rounded-lg disabled:opacity-40 text-sm">
             {canExport?t.analytics_export_csv:t.analytics_fill_required}
+          </button>
+          <button onClick={saveToLocal}
+            className="mt-4 ml-3 px-6 py-2 border-2 border-[#004030] dark:border-[#D8C3A5] text-[#004030] dark:text-[#D8C3A5] font-bold rounded-lg text-sm hover:bg-[#004030]/10 dark:hover:bg-[#D8C3A5]/10 transition-colors">
+            {t.analytics_save_local}
           </button>
         </div>
       </div>
@@ -1047,11 +1144,7 @@ function App(){
       <footer className="h-8 bg-[#004030] flex items-center justify-between px-4 shrink-0">
         <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs">{t.date} · {t.copyright}</span>
         <span className="text-[#D8C3A5]/60 text-[10px] sm:text-xs flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            Architect:&nbsp;
-            <a href="https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo" target="_blank" rel="noopener noreferrer"
-              className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a>
-          </span>
+          <span className="flex items-center gap-1">Architect:&nbsp;<a href="https://www.ibs.ncnu.edu.tw/index.php/faculty/tenured-professor/299-smlo" target="_blank" rel="noopener noreferrer" className="text-[#D8C3A5] hover:text-white underline underline-offset-2 transition-colors">Prof. Shihmin Lo</a></span>
           <button onClick={()=>window.scrollTo({top:0,behavior:'smooth'})} className="text-[#D8C3A5] hover:text-white transition-colors font-bold cursor-pointer">Top ↑</button>
         </span>
       </footer>
