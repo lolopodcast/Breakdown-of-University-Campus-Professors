@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
 <script>
 tailwind.config = {
   darkMode: 'class',
@@ -33,7 +33,7 @@ tailwind.config = {
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState, useEffect, useRef, useCallback} = React;
+const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
 /* Answer Decoder (XOR+Base64) */
 const _SALT='EDU_2026';
@@ -81,7 +81,7 @@ brand:"EDU",
 title:"AI 時代教育大解構",subtitle:"從學習方法到校園存廢的蘇格拉底式探究",
 nav_modules:"單元目錄",nav_prev:"上一單元",nav_next:"下一單元",
 key_terms:"關鍵專有名詞",flip_prompt:"點擊翻轉",audio_read:"語音導覽",
-quiz_title_fn:(picked,total,mastered)=>`模組知識檢定（隨機 ${picked} 題 / 共 ${total} 題，已精熟 ${mastered} 題）`,quiz_all_mastered:"恭喜！本模組所有題目已全部精熟 🎉",quiz_title:"模組知識檢定",
+quiz_title_tpl:"模組知識檢定（隨機 {p} 題 / 共 {t} 題，已精熟 {m} 題）",quiz_all_mastered:"恭喜！本模組所有題目已全部精熟 🎉",quiz_title:"模組知識檢定",
 submit:"送出答案",retry:"重新測驗",
 score:"得分",correct:"正確",incorrect:"錯誤",explanation:"解析",
 
@@ -282,7 +282,7 @@ brand:"EDU",
 title:"Deconstructing Education in the AI Era",subtitle:"A Socratic inquiry from learning methods to campus obsolescence",
 nav_modules:"Module Directory",nav_prev:"Previous",nav_next:"Next",
 key_terms:"Key Terms",flip_prompt:"Click to flip",audio_read:"Audio Guide",
-quiz_title_fn:(picked,total,mastered)=>`Module Quiz (${picked} of ${total}, ${mastered} mastered)`,quiz_all_mastered:"Congratulations! All questions mastered 🎉",quiz_title:"Module Quiz",
+quiz_title_tpl:"Module Quiz ({p} of {t}, {m} mastered)",quiz_all_mastered:"Congratulations! All questions mastered 🎉",quiz_title:"Module Quiz",
 submit:"Submit",retry:"Retry",
 score:"Score",correct:"Correct",incorrect:"Incorrect",explanation:"Explanation",
 
@@ -497,7 +497,7 @@ const ModuleQuiz=({questions,t,moduleId,onQuizSubmit,onRetry,mastered=[]})=>{
   const totalQ=questions.length;
   const[selected,setSelected]=useState({});
   const[submitted,setSubmitted]=useState(false);
-  const remaining=React.useMemo(()=>[...Array(totalQ).keys()].filter(i=>!mastered.includes(i)),[mastered,totalQ]);
+  const remaining=useMemo(()=>[...Array(totalQ).keys()].filter(i=>!mastered.includes(i)),[mastered,totalQ]);
   const[quizData]=useState(()=>{
     const pool=[...remaining].sort(()=>Math.random()-0.5).slice(0,Math.min(4,remaining.length));
     return pool.map(qIdx=>{
@@ -509,7 +509,7 @@ const ModuleQuiz=({questions,t,moduleId,onQuizSubmit,onRetry,mastered=[]})=>{
   const score=submitted?quizData.filter((d,i)=>selected[i]===d.ans).length:0;
   const allDone=remaining.length===0;
   if(allDone)return(<div className="mt-8 bg-green-50 dark:bg-green-900/20 rounded-2xl p-6 border border-green-300 dark:border-green-700 text-center"><p className="text-lg font-bold text-green-700 dark:text-green-300">{t.quiz_all_mastered}</p><p className="text-sm text-green-600 dark:text-green-400 mt-2">{mastered.length}/{totalQ}</p></div>);
-  const titleText=t.quiz_title_fn?t.quiz_title_fn(quizData.length,totalQ,mastered.length):t.quiz_title;
+  const titleText=(t.quiz_title_tpl||t.quiz_title).replace('{p}',quizData.length).replace('{t}',totalQ).replace('{m}',mastered.length);
   return(
     <div className="mt-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
       <h3 className="text-lg font-bold font-serif text-[#004030] dark:text-[#D8C3A5] mb-6">{titleText}</h3>
